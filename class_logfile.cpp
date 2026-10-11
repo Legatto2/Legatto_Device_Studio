@@ -49,45 +49,6 @@ void Class_LogFile::writeToLog(QByteArray ba)
     }
 
 
-    QByteArray postdata;// = data.toJson();
-    /*
-    postdata.append(QString("OperationId="+ GlobalVars::operationID+"&").toUtf8());
-    postdata.append(QString("Log="+ ba).toUtf8());
-    qDebug()<<" \n\n ByteArray:"<<postdata<<"\n\n"; */
-    QJsonObject obj;
-    obj["OperationId"] =  GlobalVars::operationID;
-    obj["Log"] = QString(ba);
-    QJsonDocument doc(obj);
-    postdata = doc.toJson();
-
-    qDebug()<<" \n\n Logs to server ByteArray:"<<postdata<<" Base64:"<<postdata.toBase64()<<" ";
-
-    QEventLoop loop;
-    QNetworkAccessManager nam;
-    QNetworkRequest req;
-    req.setUrl(QUrl(GlobalVars::api_LogQString));
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    req.setRawHeader(QByteArray("Authorization"), GlobalVars::authorizedToken.toUtf8());
-
-    QNetworkReply *reply = nam.post(req, postdata.toBase64());
-    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-    //qDebug()<<" Reply:: "<<reply->readAll();
-
-    QJsonDocument document = QJsonDocument::fromJson(QByteArray::fromBase64(reply->readAll()));
-    QJsonObject buffer = document.object();
-
-    qDebug()<<"Log Histor reply from Server:: "<<buffer;
-    qDebug()<<"\n\n ";
-
-
-
-
-
-
-
-
-
-
-
+    // Remote log upload is disabled until consent, redaction, retention,
+    // and per-operation IDs are implemented. Existing local logs are retained.
 }

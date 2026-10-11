@@ -1,4 +1,5 @@
 #include "backendclass.h"
+#include "securityhelpers.h"
 
 BackEndClass::BackEndClass(QObject *parent) : QObject(parent)
 {
@@ -61,6 +62,12 @@ BackEndClass::BackEndClass(QObject *parent) : QObject(parent)
 
 void BackEndClass::rx_StartRepairing(int idx, bool startStop, TOOL_TYPE tool)
 {
+    // Backend guard: disabling a button is not a security boundary.
+    if (startStop && tool == Tool_SPD_FRP_FastBoot) {
+        signal.currentTool = tool;
+        getServerFastBoot_File();
+        return;
+    }
     qDebug()<<" Signal received:  rx_StartRepairing "<<startStop;
     processStartStop = startStop;
     showThisinDebug = false;
@@ -207,6 +214,10 @@ void BackEndClass::rx_StartRepairing(int idx, bool startStop, TOOL_TYPE tool)
 // ---------------- QTimer Slots -----------------------
 void BackEndClass::rx_timer_SPDTool_elapsed()
 {
+    if (signal.currentTool == Tool_SPD_FRP_FastBoot) {
+        getServerFastBoot_File();
+        return;
+    }
     qDebug()<<" single Shot Timer_SPDTool :: "<<currentADB;
 
     switch (currentADB) {
@@ -471,68 +482,12 @@ void BackEndClass::rx_timer_SPDTool_elapsed()
         break;
     }
     case ADB_verify: break;
-    case ADB_FRP_GetServerFile:{
+    case ADB_FRP_GetServerFile:
+    case ADB_FRP_PushFile:
+    case ADB_FRP_FastBootErase:
+    case ADB_FRP_Fast_Reboot:
         getServerFastBoot_File();
         break;
-    }
-    case ADB_FRP_PushFile:{
-        spd_commandStr = QString("fastboot.exe  signature "+fastBoot_FileName+" oem passwd "+frp_PassWord); //+" returned in dbs");
-        shellArguments.clear();
-        shellArguments.append("/C");
-        shellArguments.append(spd_commandStr);
-        adbProcess->close();
-        adbProcess->waitForReadyRead(1000);
-        adbProcess->setArguments(shellArguments);
-        //adbProcess->start();
-        qDebug()<<" PushFile: command: "<<spd_commandStr;
-
-        //emit tx_miscOperations(signal.currentTool, 1, 50, "");
-        //emit tx_TextBoxOutput(signal.currentTool, 1, QString("Pushing FRP File to Mobile: "+spd_commandStr), false, false, GlobalVars::txtOutPutColor);
-
-        adbProcess->open(QIODevice::ReadWrite);
-        if (adbProcess->waitForStarted(6000) == false)
-            qDebug() << "Error starting external program";
-        else
-            qDebug()<< "external program running";
-        adbProcess->waitForFinished(10000);
-        break;
-    }
-    case ADB_FRP_FastBootErase:{
-        spd_commandStr = QString("fastboot erase frp");
-        shellArguments.clear();
-        shellArguments.append("/C");
-        shellArguments.append(spd_commandStr);
-        adbProcess->close();
-        adbProcess->waitForReadyRead(1000);
-        adbProcess->setArguments(shellArguments);
-        //adbProcess->start();
-        qDebug()<<" FRP Erase: command: "<<spd_commandStr;
-        adbProcess->open(QIODevice::ReadWrite);
-        if (adbProcess->waitForStarted(1000) == false)
-            qDebug() << "Error starting external program";
-        else
-            qDebug()<< "external program running";
-        adbProcess->waitForFinished(1000);
-        break;
-    }
-    case ADB_FRP_Fast_Reboot:{
-        spd_commandStr = QString("fastboot reboot");
-        shellArguments.clear();
-        shellArguments.append("/C");
-        shellArguments.append(spd_commandStr);
-        adbProcess->close();
-        adbProcess->waitForReadyRead(1000);
-        adbProcess->setArguments(shellArguments);
-        //adbProcess->start();
-        qDebug()<<" FRP Reboot: command: "<<spd_commandStr;
-        adbProcess->open(QIODevice::ReadWrite);
-        if (adbProcess->waitForStarted(1000) == false)
-            qDebug() << "Error starting external program";
-        else
-            qDebug()<< "external program running";
-        adbProcess->waitForFinished(1000);
-        break;
-    }
     }
 
 }
@@ -1482,111 +1437,21 @@ void BackEndClass::rx_updateADBdevices()
 
 bool BackEndClass::getServerFastBoot_File()
 {
-    ADB_Commands frpServerCredit = sendOperationDetailsToServerToReduceCredit();
-    if(frpServerCredit == ADB_Idle) return false;
-
-    QByteArray postdata;
-    postdata.append(QString("pname="+frp_ProdName).toUtf8());
-    postdata.append(QString("&cpuid="+frp_uniqID).toUtf8());
-
-    qDebug()<<" \n\n fastBoot ByteArray:"<<postdata; //<<" \n Encrypted: "<<encypted;
-    if(processStartStop ==  false){
-        return false;
-    }
-    QEventLoop loop;
-    QNetworkAccessManager nam;
-    QNetworkRequest req;
-    req.setUrl(QUrl(QString("http://server51214110.ngrok.io/frp.php?"+postdata)));
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    qDebug()<<"URL:: "<<req.url();
-    //QNetworkReply *reply = nam.post(req, postdata);
-    QNetworkReply *reply = nam.get(req);
-    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-    if(processStartStop ==  false){
-        return false;
-    }
-
-    QByteArray buffer = reply->readAll();
-    //qDebug()<<" reply:: "<<buffer;
-    reply->deleteLater();
-    if(processStartStop ==  false){
-        return false;
-    }
-    //qDebug()<<"\n\n\n FastBoot response_data::"<<buffer;
-    //qDebug()<<"\n\n";
-
-    if (buffer.contains("success"))
-    {
-        buffer.replace("success: ", "");
-        int idx = buffer.indexOf(":");
-        QByteArray fileBytes = buffer.left(idx);
-        qDebug()<<"\n\n";
-        qDebug()<<" xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ";
-        qDebug()<<" File Bytes:: " <<fileBytes<<" Length::"<<fileBytes.length();
-        QByteArray text = QByteArray::fromHex(fileBytes);
-        qDebug()<<" xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ";
-        qDebug()<<" Text:: "<<QString::fromLatin1(text)<<" Length::"<<text.length();
-        qDebug()<<" xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ";
-        frp_PassWord.clear();
-        frp_PassWord = buffer.right(buffer.length() - (idx+1));
-        qDebug()<<" frp_PassWord Data:: "<<frp_PassWord<<" Length::"<<frp_PassWord.length();
-        qDebug()<<" xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ";
-        fastBoot_FileName = QString (fastBootFolderPath+"/signature_"+ frp_PassWord);
-        qDebug()<<" FRP File Path: "<<fastBoot_FileName;
-        qDebug()<<"\n\n";
-
-        signal.outputString = "Getting FastBoot data from Server: OK";
-        signal.outputColor = GlobalVars::txtOutPutColor;
-        signal.outputBold = false;
-        signal.needtoInsertOutputBox = true;
-        signal.progressBarValue = 40;
-        emit tx_ADB_ProcessData(signal);
-
-        QFile frpF(fastBoot_FileName);
-        if(frpF.open(QIODevice::WriteOnly))
-        {
-            qDebug()<<" File Open ";
-            //QTextStream out(&frpF);
-              //  out << text;
-            frpF.write(text);
-
-            signal.outputString = "Created FastBoot File: OK.";
-            signal.outputColor = GlobalVars::txtOutPutColor;
-            signal.outputBold = false;
-            signal.needtoInsertOutputBox = true;
-            signal.progressBarValue = 50;
-            emit tx_ADB_ProcessData(signal);
-            fastBootPushCommandDone = false;
-            currentADB = ADB_FRP_PushFile;
-            timer_SPDTool->start(500);
-        } else {
-            qDebug()<<" Error in Writing FastBoot File.";
-            signal.outputString = "Error in FastBoot File.";
-            signal.outputColor = Qt::red; // GlobalVars::txtOutPutColor;
-            signal.outputBold = true;
-            signal.needtoInsertOutputBox = true;
-            signal.isProcessCompleted = true;
-            signal.progressBarValue = 100;
-            signal.upload_LogHistory = true;
-            emit tx_ADB_ProcessData(signal);
-            return false;
-        }
-        frpF.close();
-    } else {
-
-        signal.outputString = "Error in FastBoot File.";
-        signal.outputColor = Qt::red; // GlobalVars::txtOutPutColor;
-        signal.outputBold = true;
-        signal.needtoInsertOutputBox = true;
-        signal.isProcessCompleted = true;
-        signal.progressBarValue = 100;
-        signal.upload_LogHistory  = true;
-        emit tx_ADB_ProcessData(signal);
-
-        return false;
-    }
-    return true;
+    // Intentionally fail closed. No charge, network request, downloaded file,
+    // or shell execution is permitted through this retired workflow.
+    timer_SPDTool->stop();
+    timer_SingleShot->stop();
+    currentADB = ADB_Idle;
+    processStartStop = false;
+    signal.outputString = "FRP is disabled pending a secure, validated replacement.";
+    signal.outputColor = Qt::red;
+    signal.outputBold = true;
+    signal.needtoInsertOutputBox = true;
+    signal.progressBarValue = 100;
+    signal.isProcessCompleted = true;
+    signal.upload_LogHistory = false;
+    emit tx_ADB_ProcessData(signal);
+    return false;
 }
 
 bool BackEndClass::getServerIMEInumber_updateGlobal()
@@ -1733,93 +1598,61 @@ bool BackEndClass::getServerIMEInumber_updateGlobal()
 
 ADB_Commands BackEndClass::sendOperationDetailsToServerToReduceCredit()
 {
-    QByteArray postdata;  QJsonObject obj;
-    if(signal.currentTool == Tool_SPD)
-        obj["OperationName"] = "ADBrepair";
-    else if(signal.currentTool == Tool_UnLock)
-        obj["OperationName"] = "ADBunlock";
-    else if(signal.currentTool == Tool_SPD_FRP_FastBoot)
-        obj["OperationName"] = "FastBootFRP";
+    const auto failed = [this]() -> ADB_Commands {
+        signal.outputString = "Operation authorization failed or returned an invalid response. No device operation was started by this step.";
+        signal.outputColor = Qt::red;
+        signal.outputBold = true;
+        signal.needtoInsertOutputBox = true;
+        signal.progressBarValue = 100;
+        signal.isProcessCompleted = true;
+        signal.upload_LogHistory = false;
+        emit tx_ADB_ProcessData(signal);
+        return ADB_Idle;
+    };
+    if (!processStartStop) return ADB_Idle;
+    if (GlobalVars::authorizedToken.isEmpty()) return failed();
 
-    obj["DeviceName"] = GlobalVars::spd_modelStr;
-    QJsonDocument doc(obj);
-    postdata = doc.toJson();
-    qDebug()<<" \n\n ByteArray:"<<postdata<<" Base64::"<<postdata.toBase64();
-    if(processStartStop ==  false){ return ADB_Idle; }
+    QJsonObject object;
+    if (signal.currentTool == Tool_SPD) object["OperationName"] = "ADBrepair";
+    else if (signal.currentTool == Tool_UnLock) object["OperationName"] = "ADBunlock";
+    else return failed();
+    object["DeviceName"] = GlobalVars::spd_modelStr;
+
+    QNetworkAccessManager manager;
+    QNetworkRequest request(QUrl(GlobalVars::api_MTKcharges));
+    if (request.url().scheme() != "https") return failed();
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    request.setRawHeader("Authorization", GlobalVars::authorizedToken.toUtf8());
+    QNetworkReply *reply = manager.post(request, QJsonDocument(object).toJson().toBase64());
     QEventLoop loop;
-    QNetworkAccessManager nam;
-    QNetworkRequest req;
-    req.setUrl(QUrl(GlobalVars::api_MTKcharges));
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    req.setRawHeader(QByteArray("Authorization"), GlobalVars::authorizedToken.toUtf8());
-
-    QNetworkReply *reply = nam.post(req, postdata.toBase64());
+    QTimer deadline;
+    deadline.setSingleShot(true);
+    bool timedOut = false;
     connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-    if(processStartStop ==  false){ return ADB_Idle; }
-    QByteArray buffer = reply->readAll();
-    buffer = QByteArray::fromBase64(buffer);
-    reply->deleteLater();
-    //qDebug()<<"\n\n\n ADB response_data::"<<buffer;
-    qDebug()<<"\n\n";
-    QJsonDocument document = QJsonDocument::fromJson(buffer);
-    QJsonObject jsonBuffer = document.object();
-    qDebug()<<"Server Authentication reply:: "<<jsonBuffer;
-    qDebug()<<" isError: "<<jsonBuffer.value("isError");
-    qDebug()<<" IsError: "<<jsonBuffer.value("IsError");
-    qDebug()<<" Model: "<<jsonBuffer.value("Model");
-    qDebug()<<" Message: "<<jsonBuffer.value("Message");
-    qDebug()<<"\n\n ";
-    if(jsonBuffer.contains("isError")) {
-        if (jsonBuffer.value("isError").toBool() == false)
-        {
-            QJsonValue buffer1 = jsonBuffer.value("Model");
-            //qDebug()<<" QJsonValue Model: "<<buffer1;
-            QJsonObject bufferModel = buffer1.toObject();
-            GlobalVars::operationID = bufferModel.value("OperationId").toDouble();
-            GlobalVars::userInfo_creditDetails = bufferModel.value("Credit").toDouble();
-            qDebug()<<" operationID qq : "<<GlobalVars::operationID;
-            qDebug()<<"\n\n ";
+    connect(&deadline, &QTimer::timeout, &loop, [&]() {
+        timedOut = true;
+        reply->abort();
+        loop.quit();
+    });
+    deadline.start(15000);
+    if (!reply->isFinished()) loop.exec();
+    deadline.stop();
+    if (!processStartStop) return ADB_Idle;
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (timedOut || reply->error() != QNetworkReply::NoError || status < 200 || status >= 300)
+        return failed();
 
-            signal.outputString = QString("OperationID:"+QString::number(GlobalVars::operationID,'f',0));
-            signal.outputColor = GlobalVars::txtOutPutColor;
-            signal.outputBold = false;
-            signal.needtoInsertOutputBox = true;
-
-            emit tx_ADB_ProcessData(signal);
-            return ADB_SerialNumber;
-
-        }
-    } else if(jsonBuffer.contains("IsError")) {
-        if (jsonBuffer.value("IsError").toBool() == true)
-        {
-            GlobalVars::operationID = 0.0;
-            qDebug()<<" operationID : "<<GlobalVars::operationID;
-
-            signal.outputString = QString("OperationID: "+QString::number(GlobalVars::operationID, 'f', 0));
-            signal.outputColor = GlobalVars::txtOutPutColor;
-            signal.outputBold = false;
-            signal.needtoInsertOutputBox = true;
-            emit tx_ADB_ProcessData(signal);
-
-            signal.outputBold = true;
-            signal.outputColor = Qt::red;
-            qDebug()<<" Message22: "; //<<jsonBuffer.value("Message");
-            QString str = QString("Error: "+(jsonBuffer.value("Message").toString()));
-            qDebug()<<" Error Message: "<<str;
-            qDebug()<<"\n\n ";
-
-            signal.outputString = str;
-            signal.needtoInsertOutputBox = true;
-            signal.progressBarValue = 100;
-            signal.isProcessCompleted = true;
-            emit tx_ADB_ProcessData(signal);
-
-            return ADB_Idle;
-        }
-    }
-
-
+    Security::ChargeResult result;
+    if (!Security::parseChargeReply(QByteArray::fromBase64(reply->readAll()), &result))
+        return failed();
+    GlobalVars::operationID = result.operationId;
+    GlobalVars::userInfo_creditDetails = result.credit;
+    signal.outputString = "OperationID:" + QString::number(result.operationId, 'f', 0);
+    signal.outputColor = GlobalVars::txtOutPutColor;
+    signal.outputBold = false;
+    signal.needtoInsertOutputBox = true;
+    emit tx_ADB_ProcessData(signal);
+    return ADB_SerialNumber;
 }
 
 

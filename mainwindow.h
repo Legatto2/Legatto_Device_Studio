@@ -202,9 +202,8 @@ private:
     int metaTabUniversal = 0;
 
     void seeSettingsFile();
-    void processSettingsFileLine(QString linee);
     void saveNewSettings();
-    bool rememberMyCredentials = false;
+    bool settingsReady = false;
 
     bool needUpdatedSoftware = false;
 

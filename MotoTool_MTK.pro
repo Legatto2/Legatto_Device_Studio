@@ -4,6 +4,12 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets serialport network
 
 CONFIG += c++11
 
+# Temporary containment: legacy debug streams include authentication material.
+# Apply to debug AND release builds until structured redacted logging is in place.
+DEFINES += QT_NO_DEBUG_OUTPUT
+SOURCES += securityhelpers.cpp portselection.cpp
+HEADERS += securityhelpers.h portselection.h
+
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
