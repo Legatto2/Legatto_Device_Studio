@@ -1,0 +1,18 @@
+{
+  ".gitignore": {"before": null, "after": "67a89adc2abde1a7a534fe318030b23d5b3322544d923a227c3726828d25a4af"},
+  "MotoTool_MTK.pro": {"before": "b09c24db774a9659bc1c41124e00107101348847f1e65104a26fef34d5677e13", "after": "d763b4b6d8f86e29bc96095fa52d77124211536b4091b3e1cee4d2dbd19ec81d"},
+  "README.md": {"before": null, "after": "a5df8430daf4729cdb51150d2d9e51965fbc024f0a6e0901554242ae1db06ff1"},
+  "backendclass.cpp": {"before": "d559a16aa3faed2d9e566d94d4b1df11ddee13353904ce2dece4c3b498efbc26", "after": "373863d2dcbbeb7746a2cd1a02b29bc8c705411b013db64f200204adb5180cc5"},
+  "class_logfile.cpp": {"before": "f582bbd4dc6f731129e7c7210ce72de0539e076901abf8387150290fbafee7ae", "after": "a481b4022e420f846531e819c22f83c286e482e328485c2eaa947f2c1d90c2c7"},
+  "docs/HARDENING.md": {"before": null, "after": "81560775592abb05fd9fae2607d4bae3e747aba283baa36b6bb085a668667e5d"},
+  "mainwindow.cpp": {"before": "8e3f21298620aba878b1f06063e2f892d2d609d59ae1c201f3867d4036447dbc", "after": "654a90168a01d19f860819fafe2fd316adb81a59fc4ec3e70665bb87e589d336"},
+  "mainwindow.h": {"before": "6344df4c9c2669d04a9debc659bce884ccde8b0b134f2c9c41058642efa97ee7", "after": "5d2a79ee5da740a06219b743d12c566aef9518ef5379ea5f5530600fd7963a35"},
+  "mainwindow.ui": {"before": "bc4f28efff0940091e063d9678976ff914ff05836a3f0a51424fec8e2cf98e30", "after": "b631c60a16b5deacdde93dc276660a08a19184986cd55ae3491d5dfc131a9e06"},
+  "portselection.cpp": {"before": null, "after": "4f74fd2355c0838d766059155435fd55b85cc58acc427da5dd7e32442d53bd04"},
+  "portselection.h": {"before": null, "after": "100165f2ad54f273cba9458fbdbe9501837f067d0b1cbf4294c943125de96d15"},
+  "securityhelpers.cpp": {"before": null, "after": "2be75400141cbff1916691a0b33b18453e292f12114e6e8df14e076fa34132fe"},
+  "securityhelpers.h": {"before": null, "after": "29dd67461e6b6b41768f77c92205a64ba8fe0e0d946a7fed74e080ccd1ada27c"},
+  "tests/security_tests.cpp": {"before": null, "after": "d952efd3275f47d0be1137cccde898f3dc0a46c822379d84410fbfb32fa2205a"},
+  "tests/security_tests.pro": {"before": null, "after": "bd46885f67d9c4e84683194074ccb1dbb5fb314ed923a916e9f5de5920faaf19"},
+  "tests/test_source_safety.py": {"before": null, "after": "0e280d008cbda31ed07b5f5b62359a1bf114aeff49b9ac9028eb00705c36b554"}
+}

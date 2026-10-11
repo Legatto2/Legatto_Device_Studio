@@ -1,0 +1,82 @@
+name: Apply reviewed containment increment
+
+on:
+  push:
+    branches: ['hardening/phase-1-containment']
+    paths:
+      - '.github/workflows/apply-phase1.yml'
+      - 'maintenance/**'
+
+permissions:
+  contents: read
+
+jobs:
+  apply-reviewed-change:
+    if: github.repository == 'Legatto2/MotoTool_MTK' && github.ref == 'refs/heads/hardening/phase-1-containment'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Apply only hash-verified source edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-artifacts
+          cp maintenance/phase1-manifest.json audit-artifacts/manifest.json
+          git rev-parse HEAD > audit-artifacts/input-revision.txt
+          python3 maintenance/apply_phase1.py 2>&1 | tee audit-artifacts/preparation.log
+          git diff --check
+      - name: Run source regression guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee audit-artifacts/source-tests.log
+      - name: Install isolated Qt build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y qtbase5-dev libqt5serialport5-dev
+          qmake -v > audit-artifacts/toolchain.txt
+          g++ --version >> audit-artifacts/toolchain.txt
+      - name: Compile application without launching it
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          cd build
+          qmake ../MotoTool_MTK.pro CONFIG+=debug 'QMAKE_CXXFLAGS+=-Werror=return-type'
+          make -j2 2>&1 | tee ../audit-artifacts/build.log
+      - name: Compile and run hardware-free Qt tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build-tests
+          cd build-tests
+          qmake ../tests/security_tests.pro CONFIG+=debug 'QMAKE_CXXFLAGS+=-Werror=return-type'
+          make -j2 2>&1 | tee ../audit-artifacts/test-build.log
+          QT_QPA_PLATFORM=offscreen ./security_tests -txt 2>&1 | tee ../audit-artifacts/qt-tests.log
+      - name: Commit tested sources to the dedicated branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- MotoTool_MTK.pro backendclass.cpp class_logfile.cpp mainwindow.cpp mainwindow.h mainwindow.ui
+          git rm -- .github/workflows/apply-phase1.yml maintenance/apply_phase1.py maintenance/phase1-manifest.json
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: contain credential and FRP risks; validate charging and port selection'
+          git rev-parse HEAD > audit-artifacts/revision.txt
+          git archive --format=zip HEAD -o audit-artifacts/source-snapshot.zip
+          # Deliberately not forced. A concurrent branch update must fail safely.
+          git push origin HEAD:refs/heads/hardening/phase-1-containment
+      - name: Preserve build and test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: containment-preparation-${{ github.sha }}
+          path: audit-artifacts/
+          retention-days: 7
+          if-no-files-found: error

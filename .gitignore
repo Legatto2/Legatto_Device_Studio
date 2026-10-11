@@ -1,0 +1,8 @@
+/build*/
+/audit-artifacts/
+/Log/
+/motoToolSettings
+*.pro.user*
+.qmake.stash
+__pycache__/
+*.pyc
