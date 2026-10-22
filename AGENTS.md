@@ -2,19 +2,22 @@
 
 ## Product and boundaries
 
-MotoTool is being developed into a reliable desktop workspace for authorized
+Legatto Device Studio is being developed into a reliable desktop workspace for authorized
 Android diagnostics and, after separate validation, servicing. The current
-default target is `MotoTool_Diagnostics`. Read `docs/ARCHITECTURE.md` and
+default target is `LegattoDeviceStudio`. Read `docs/ARCHITECTURE.md` and
 `docs/AUDIT.md` before changing execution behavior.
 
 - `diagnostics/` contains the new application. `Service` is the sole command
   boundary; the window presents state and exports its already filtered report.
 - Root-level `mainwindow`, `backendclass`, `metamodethread`, and `globalvars`
   are preserved legacy code. CMake builds them only with
-  `MOTOTOOL_BUILD_LEGACY=ON` and Qt 5. Do not reconnect that backend to the new UI
+  `LEGATTO_BUILD_LEGACY=ON` and Qt 5. Do not reconnect that backend to the new UI
   or infer that compilation validates its device operations.
-- Preserve upstream attribution and inherited work. Distribution rights are
-  unresolved; consult `THIRD_PARTY_NOTICES.md` before licensing or packaging.
+- Credit Michael Heald (Legatto2) for new original contributions and preserve
+  upstream attribution. Consult `COPYRIGHT.md`, `THIRD_PARTY_NOTICES.md`, and
+  `docs/LICENSING_REVIEW.md` before licensing or packaging. The owner has chosen
+  rights reserved for new original contributions, as recorded in `LICENSE`;
+  inherited/dependency rights remain separate.
 
 ## Work sequence
 
@@ -42,10 +45,17 @@ default target is `MotoTool_Diagnostics`. Read `docs/ARCHITECTURE.md` and
 - Never log or publish passwords, tokens, IMEI values, raw customer serials,
   private filesystem paths, or unfiltered command output. Review report fields
   as an allowlist. Do not copy historic credential values into test fixtures.
-- Tests and ordinary CI must not invoke real ADB/USB devices, legacy account
-  services, billing endpoints, or servicing binaries. Physical-device tests
-  require a dedicated documented test session and the matrix in
-  `docs/DEVICE_TEST_MATRIX.md`.
+- Ordinary tests and CI use the compiled fake ADB and must not invoke a real
+  ADB or USB device. The separately enabled emulator integration lane is the
+  documented exception: it may use genuine SDK tools only against the two
+  disposable AVDs created and verified by its runner. Follow
+  `docs/EMULATOR_TESTING.md`, require the explicit disposable-emulator opt-in,
+  and do not substitute customer devices or an existing personal AVD. This lane
+  is authorized for emulator validation; it is not authorization for physical
+  device operations.
+- No test lane may contact legacy account services, billing endpoints, or
+  servicing binaries. Physical-device tests still require a dedicated documented
+  test session and the matrix in `docs/DEVICE_TEST_MATRIX.md`.
 - A device-changing feature needs its own reviewed operation plan, supported
   device/firmware evidence, recovery behavior, and acceptance tests before it is
   exposed to users. Do not treat a successful process exit as verified repair.
@@ -64,9 +74,13 @@ ctest --preset linux-qt6
 
 On Windows use the `windows-msvc` configure/build/test presets and the matching
 Qt MSVC kit. See `CONTRIBUTING.md` for setup and the optional legacy build. CTest
-sets `MOTOTOOL_TEST_ADB` to the fake fixture; do not substitute a production ADB.
+sets `LEGATTO_TEST_ADB` to the fake fixture; do not substitute a production ADB.
+The default-off `LEGATTO_BUILD_EMULATOR_TESTS` option and dedicated runner are
+described in `docs/EMULATOR_TESTING.md`. Keep their real-tool evidence separate
+from the ordinary CTest results and from physical-device acceptance.
 
 Keep dependencies and GitHub Actions pinned where supported, workflow tokens
 read-only by default, secrets out of PR workflows, and evidence tied to a commit
-and toolchain. Report compilation, synthetic tests, UI checks, Windows checks,
-and physical-device tests separately. Never mark an unrun check as passed.
+and toolchain. Report compilation, synthetic tests, UI checks, emulator checks,
+Windows checks, and physical-device tests separately. Never mark an unrun check
+as passed.

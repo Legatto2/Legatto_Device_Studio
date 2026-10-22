@@ -2,9 +2,9 @@
 
 ## Project status
 
-MotoTool_MTK is under redevelopment. `MotoTool_Diagnostics` is a development
-application; the inherited `MotoTool_MTK` client is retained for engineering
-review. There is no supported production release or verified customer-device
+Legatto Device Studio, built as `LegattoDeviceStudio`, is a development
+application in this repository; the inherited `LegacyServiceClient` client is
+retained for engineering review. There is no supported production release or verified customer-device
 compatibility promise. The previous template version table did not describe
 this project and has been removed.
 
@@ -52,3 +52,6 @@ provider; changing source or suppressing debug output is not credential rotation
 
 See [third-party notices](THIRD_PARTY_NOTICES.md) for provenance gaps and the
 [device test matrix](docs/DEVICE_TEST_MATRIX.md) for validation boundaries.
+The [privacy notice](PRIVACY.md) describes the diagnostics data flow and export
+limits; the [development disclaimer](DISCLAIMER.md) records operational and
+liability limitations without replacing mandatory rights.

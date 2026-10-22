@@ -1,14 +1,26 @@
 # Authorship, dependencies, and distribution status
 
+## New original work
+
+**Copyright © 2026 Michael Heald (Legatto2), for new original contributions to
+Legatto Device Studio.** The owner has chosen **rights reserved**, recorded in
+[LICENSE](LICENSE) and [COPYRIGHT.md](COPYRIGHT.md).
+[LICENSING_REVIEW.md](docs/LICENSING_REVIEW.md) provides the confirmed decision and
+release obligations. This attribution does not claim ownership of the inherited
+material below or of dependencies.
+
 ## Repository source
 
 This repository contains inherited source and assets. Its history includes early
 commits under `ABC` and `x`, and commit
-[`80e245e`](https://github.com/Legatto2/MotoTool_MTK/commit/80e245e0d0f2ed96f37713138887711e25e65762)
+[`80e245e`](https://github.com/Legatto2/Legatto_Device_Studio/commit/80e245e0d0f2ed96f37713138887711e25e65762)
 attributed to **Mubashir Iqbal** ([Mubshr07](https://github.com/Mubshr07)), followed
-by maintenance and hardening in `Legatto2/MotoTool_MTK`. These records establish
+by maintenance and hardening in `Legatto2/Legatto_Device_Studio`. These records establish
 attribution evidence, not a complete ownership determination. The modernization
 does not claim original authorship of inherited work.
+
+The consolidated historical credits and the boundary around the archived client
+are in [PROJECT_HISTORY.md](docs/PROJECT_HISTORY.md).
 
 No repository-wide license grant was found in the inspected source trees or
 license-file history. The modernization does not relicense inherited code,
@@ -26,14 +38,19 @@ establish broad redistribution permission; see
 | Component | Use | Acquisition / rights status |
 | --- | --- | --- |
 | Qt Core and Widgets | Diagnostics runtime/UI | Obtain from Qt or an established distribution; comply with that distribution's terms |
-| Qt Test | Hardware-free tests | Development dependency with applicable Qt terms |
+| Qt Test | Ordinary fake-tool tests and the opt-in emulator test | Development dependency with applicable Qt terms |
 | Qt Network and SerialPort | Optional legacy client | Not dependencies of the new diagnostics service; review terms before packaging |
 | Android SDK Platform-Tools / ADB | Operator-selected diagnostics executable | Obtain separately from the official Android distribution; no binary included here |
+| Android Emulator, Command-Line Tools, and Google APIs system image | Opt-in disposable-emulator validation | Separately installed SDK packages with applicable package terms; no SDK/AVD disk distribution in CI artifacts |
 | CMake, Ninja, compiler, Python | Build/test tools | Development dependencies |
 | GitHub Actions | Hosted build/test automation | Revisions declared in workflows; action terms and runner allowances are separate |
 | Original icons, banner, portrait, stylesheet | Inherited legacy resources | Provenance/redistribution permission not established by Git presence |
 | Legacy `M3`, `ADB`, `DATA` helper/data trees | Historical servicing | Referenced but not supplied as a verified bundle; rights, versions, hashes, and provenance unresolved |
 | Legacy external APIs | Historical account/servicing | Ownership, availability, contract, and permission unvalidated; not used by new diagnostics |
+
+The default diagnostics target no longer embeds the inherited `pics/appIcon.ico`.
+That resource is retained only in the explicitly enabled legacy target. Removing
+it from the new executable does not establish rights for other inherited assets.
 
 ### Qt
 

@@ -2,9 +2,10 @@
 
 ## Direction
 
-`MotoTool_Diagnostics` is the default application for new development. Its first
-capability is a guided read-only ADB inspection. The inherited `MotoTool_MTK`
-application remains a separate, optional engineering target.
+Legatto Device Studio, built as `LegattoDeviceStudio`, is the default application
+for new development. Its first capability is a guided read-only ADB inspection.
+The inherited `LegacyServiceClient` application remains a separate, optional
+engineering target.
 
 The two applications do not share a live account session, command dispatcher,
 device-operation globals, or remote service client. This is a deliberate boundary:

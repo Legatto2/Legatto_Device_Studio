@@ -487,7 +487,7 @@ QJsonObject Service::makeReport() const
     toolInfo.insert(QStringLiteral("sha256"), m_tool.sha256);
     QJsonObject report;
     report.insert(QStringLiteral("schemaVersion"), 1);
-    report.insert(QStringLiteral("application"), QStringLiteral("MotoTool_MTK"));
+    report.insert(QStringLiteral("application"), QStringLiteral("Legatto Device Studio"));
     report.insert(QStringLiteral("applicationVersion"), QStringLiteral("0.1.0-dev"));
     report.insert(QStringLiteral("generatedAt"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
     report.insert(QStringLiteral("deviceId"), QStringLiteral("device-") + QString::fromLatin1(digest.left(24)));

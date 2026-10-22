@@ -34,6 +34,10 @@ remaining limitations. Device support or a distributable release is not implied.
 
 ## 2. Technician-ready diagnostics
 
+The opt-in [emulator integration lane](EMULATOR_TESTING.md) adds a repeatable
+real-ADB validation step before physical acceptance. Its recorded outcomes are
+separate from model/firmware support and Windows packaging evidence.
+
 - Guided installation and connection troubleshooting with official tool/driver links.
 - Distinct missing-tool, unauthorized, offline, disconnected, and unsupported states.
 - A tested inventory for model, Android/build, and justified read-only health data.

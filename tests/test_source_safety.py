@@ -64,7 +64,7 @@ class SourceSafetyTests(unittest.TestCase):
             self.assertFalse(bool(value), "Embedded credential defaults must be empty")
 
     def test_debug_output_disabled_in_all_application_builds(self):
-        self.assertRegex((ROOT / "MotoTool_MTK.pro").read_text(), r"(?m)^DEFINES \+= QT_NO_DEBUG_OUTPUT$")
+        self.assertRegex((ROOT / "LegacyServiceClient.pro").read_text(), r"(?m)^DEFINES \+= QT_NO_DEBUG_OUTPUT$")
 
     def test_remote_log_upload_removed(self):
         text = body("class_logfile.cpp", "void Class_LogFile::writeToLog(")

@@ -316,7 +316,7 @@ void MainWindow::seeSettingsFile()
     ui->txt_Password->clear();
     Security::LoginPreferences preferences;
     QString error;
-    if (!Security::loadLoginPreferences(GlobalVars::motoTool_SettingsFilePath, &preferences, &error)) {
+    if (!Security::loadLoginPreferences(GlobalVars::legacySettingsFilePath, &preferences, &error)) {
         ui->lbl_LoginResults->setText(error + " Login disabled; resolve the settings file and restart.");
         ui->pb_Login->setEnabled(false);
         return;
@@ -334,7 +334,7 @@ void MainWindow::saveNewSettings()
     preferences.rememberUsername = ui->chck_LoginRememberMe->isChecked();
     if (preferences.rememberUsername) preferences.username = ui->txt_UsernameEmail->text();
     QString error;
-    if (!Security::saveLoginPreferences(GlobalVars::motoTool_SettingsFilePath, preferences, &error)) {
+    if (!Security::saveLoginPreferences(GlobalVars::legacySettingsFilePath, preferences, &error)) {
         settingsReady = false;
         ui->pb_Login->setEnabled(false);
         ui->lbl_LoginResults->setText(error + " Preferences were not saved.");

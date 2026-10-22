@@ -1,6 +1,6 @@
 #include <windows.h>
 
-IDI_ICON1	ICON	DISCARDABLE	"C:\\Users\\DroiDom\\Documents\\MotoTool_MTK\\pics\\appIcon.ico"
+IDI_ICON1	ICON	DISCARDABLE	"pics/appIcon.ico"
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "coolapp.exe.manifest"
 
 VS_VERSION_INFO VERSIONINFO
@@ -24,8 +24,8 @@ VS_VERSION_INFO VERSIONINFO
 				VALUE "FileDescription", "\0"
 				VALUE "FileVersion", "0.0.0.0\0"
 				VALUE "LegalCopyright", "\0"
-				VALUE "OriginalFilename", "MotoTool_MTK.exe\0"
-				VALUE "ProductName", "MotoTool_MTK\0"
+				VALUE "OriginalFilename", "LegacyServiceClient.exe\0"
+				VALUE "ProductName", "LegacyServiceClient\0"
 				VALUE "ProductVersion", "0.0.0.0\0"
 			END
 		END

@@ -4,6 +4,12 @@ This file defines hardware acceptance evidence. **No physical-device or packaged
 Windows acceptance run has been recorded for the professional-foundation increment.**
 Hardware-free Qt tests and CI builds do not change that status.
 
+The separate [emulator integration record](EMULATOR_TESTING.md) tests genuine
+ADB against disposable Android Virtual Devices. It provides real-tool evidence
+for the tested emulator environment, while every physical-device and packaged
+Windows result below remains independent. Passing emulator checks must not be
+copied into hardware rows or presented as Motorola/MediaTek compatibility.
+
 ## Recording a run
 
 Record source commit, artifact hash, OS version/architecture, compiler/Qt kit,

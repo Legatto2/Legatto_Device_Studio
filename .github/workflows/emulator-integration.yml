@@ -1,0 +1,178 @@
+name: Android emulator integration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'diagnostics/**'
+      - 'tests/emulator_integration_tests.cpp'
+      - 'scripts/run_emulator_integration.py'
+      - 'CMakeLists.txt'
+      - '.github/workflows/emulator-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: emulator-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  emulator:
+    name: Android API 35 two-device integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      LEGATTO_SYSTEM_IMAGE: 'system-images;android-35;google_apis;x86_64'
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check KVM access on the disposable runner
+        timeout-minutes: 1
+        run: |
+          set -euo pipefail
+          mkdir -p emulator-evidence/build
+          git rev-parse HEAD > emulator-evidence/build/revision.txt
+          test -c /dev/kvm
+          # Only this ephemeral runner user needs access; do not enable software fallback.
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
+          sudo chmod 0600 /dev/kvm
+          test -r /dev/kvm && test -w /dev/kvm
+          stat -c 'device=%n mode=%a owner=%U group=%G' /dev/kvm \
+            > emulator-evidence/build/kvm.txt
+
+      - name: Install Qt and build tools
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            cmake ninja-build qt6-base-dev libgl1 libpulse0 libnss3
+          {
+            printf 'runner-image=%s\nrunner-image-version=%s\n' "${ImageOS:-unknown}" "${ImageVersion:-unknown}"
+            cmake --version
+            ninja --version
+            g++ --version
+            python3 --version
+            dpkg-query -W qt6-base-dev libgl1 libpulse0 libnss3
+            free -m
+            df -h .
+          } > emulator-evidence/build/toolchain.txt
+
+      - name: Install stable Android SDK packages and record revisions
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          LEGATTO_SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          [[ -n "$LEGATTO_SDK_ROOT" && "$LEGATTO_SDK_ROOT" = /* ]]
+          LEGATTO_SDK_ROOT="$(realpath -e "$LEGATTO_SDK_ROOT")"
+          test -x "$LEGATTO_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          export ANDROID_SDK_ROOT="$LEGATTO_SDK_ROOT"
+          printf 'ANDROID_SDK_ROOT=%s\n' "$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          # sdkmanager handles official downloads and integrity checks. The package
+          # IDs are fixed; upstream revisions are recorded instead of claimed fixed.
+          # Finite answers accept licenses only for these packages on disposable CI.
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          sdk = Path(os.environ["ANDROID_SDK_ROOT"])
+          image = os.environ["LEGATTO_SYSTEM_IMAGE"]
+          evidence = Path("emulator-evidence/build")
+          command = [
+              str(sdk / "cmdline-tools/latest/bin/sdkmanager"),
+              f"--sdk_root={sdk}", "--channel=0", "--install",
+              "platform-tools", "emulator", image,
+          ]
+          with (evidence / "sdk-install.log").open("w", encoding="utf-8") as log:
+              subprocess.run(
+                  command, input="y\n" * 100, text=True,
+                  stdout=log, stderr=subprocess.STDOUT, timeout=420, check=True,
+              )
+
+          allowed = {
+              "Pkg.Revision", "Pkg.Desc", "AndroidVersion.ApiLevel",
+              "SystemImage.Abi", "SystemImage.TagId", "SystemImage.VendorId",
+          }
+          def properties(relative):
+              result = {}
+              for line in (sdk / relative / "source.properties").read_text(encoding="utf-8").splitlines():
+                  key, separator, value = line.partition("=")
+                  if separator and key.strip() in allowed:
+                      result[key.strip()] = value.strip()
+              if not result.get("Pkg.Revision"):
+                  raise RuntimeError(f"Missing package revision: {relative}")
+              return result
+
+          metadata = {
+              "requested_system_image": image,
+              "channel": "stable",
+              "command_line_tools": properties("cmdline-tools/latest"),
+              "platform_tools": properties("platform-tools"),
+              "emulator": properties("emulator"),
+              "system_image": properties(image.replace(";", "/")),
+          }
+          actual = metadata["system_image"]
+          if (actual.get("AndroidVersion.ApiLevel"), actual.get("SystemImage.Abi"), actual.get("SystemImage.TagId")) != ("35", "x86_64", "google_apis"):
+              raise RuntimeError("Installed system image does not match the requested API, ABI and tag")
+          (evidence / "sdk-metadata.json").write_text(
+              json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          PY
+          timeout 30s "$ANDROID_SDK_ROOT/emulator/emulator" -accel-check \
+            2>&1 | tee -a emulator-evidence/build/kvm.txt
+
+      - name: Configure the opt-in integration target
+        run: |
+          set -euo pipefail
+          cmake -S . -B build/emulator -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+            -DLEGATTO_QT_MAJOR=6 -DLEGATTO_BUILD_LEGACY=OFF \
+            -DLEGATTO_BUILD_EMULATOR_TESTS=ON -DBUILD_TESTING=ON \
+            2>&1 | tee emulator-evidence/build/configure.log
+
+      - name: Build the integration test executable
+        run: |
+          set -euo pipefail
+          cmake --build build/emulator --target emulator_integration_tests --parallel 2 \
+            2>&1 | tee emulator-evidence/build/build.log
+
+      - name: Validate two disposable virtual phones
+        timeout-minutes: 18
+        run: |
+          set -euo pipefail
+          python3 scripts/run_emulator_integration.py \
+            --sdk-root "$ANDROID_SDK_ROOT" \
+            --test-executable "$PWD/build/emulator/emulator_integration_tests" \
+            --system-image "$LEGATTO_SYSTEM_IMAGE" \
+            --evidence-dir "$PWD/emulator-evidence/session" \
+            --allow-disposable-emulators
+
+      - name: Preserve only sanitized results and build evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: evidence-emulator-api35-${{ github.sha }}
+          # Do not broaden this list to AVD data, raw ADB/emulator logs or disk images.
+          path: |
+            emulator-evidence/session/summary.json
+            emulator-evidence/session/qt-initial.txt
+            emulator-evidence/session/qt-restarted.txt
+            emulator-evidence/session/report-*.json
+            emulator-evidence/build/revision.txt
+            emulator-evidence/build/toolchain.txt
+            emulator-evidence/build/kvm.txt
+            emulator-evidence/build/sdk-install.log
+            emulator-evidence/build/sdk-metadata.json
+            emulator-evidence/build/configure.log
+            emulator-evidence/build/build.log
+          retention-days: 7
+          if-no-files-found: warn

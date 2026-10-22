@@ -2,20 +2,23 @@
 
 ### Know the device. See the result.
 
-A Qt/C++ desktop workbench for clearer Motorola and Android diagnostics, with a
-professional development foundation for future, validated service operations.
+A Qt/C++ desktop workspace for read-only Android diagnostics. Choose the device,
+inspect its reported information, and review exactly what you export.
+
+Developed by **Michael Heald (Legatto2)**.
+[Project repository](https://github.com/Legatto2/Legatto_Device_Studio).
 
 **Development preview · `0.1.0-dev` · Windows-first · Qt 5 / Qt 6**
 
 [Getting started](#getting-started) · [Build guide](docs/DEVELOPMENT.md) ·
 [Roadmap](docs/ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) ·
-[Engineering audit](docs/AUDIT.md)
+[Engineering audit](docs/AUDIT.md) · [Privacy](PRIVACY.md) · [Disclaimer](DISCLAIMER.md)
 
-![MotoTool Diagnostics development workspace; no device connected](docs/images/diagnostics-workspace.png)
+![Legatto Device Studio development workspace; no device connected](docs/images/diagnostics-workspace.png)
 
 ## What this version does
 
-`MotoTool_Diagnostics` is the new default application. It provides a focused
+Legatto Device Studio builds as `LegattoDeviceStudio`. It provides a focused
 workflow: choose your Android tools, select a connected device, inspect it, and
 review a report before exporting.
 
@@ -42,16 +45,28 @@ installer or universal Motorola/MediaTek support claim.
 1. **Build the diagnostics application** using the [development guide](docs/DEVELOPMENT.md).
 2. **Get Android Platform-Tools** from [Google's official download](https://developer.android.com/tools/releases/platform-tools)
    or Android Studio's SDK Manager.
-3. **Open MotoTool Diagnostics**, browse to the native `adb.exe` on Windows or
+3. **Open Legatto Device Studio**, browse to the native `adb.exe` on Windows or
    `adb` on Linux, and choose **Check tool**.
 4. Connect a device with USB debugging enabled and approve its debugging prompt.
    Choose **Refresh**, then select the intended device.
 5. Choose **Inspect selected device**. Review **Device details** and **Export preview**;
    use **Export report** when you want a JSON file.
 
-No account-service login is needed by the diagnostics application. Inspection
-uses a restricted set of read-only commands. The original service workflows are
-kept in a separate legacy application.
+No account-service login is needed. Inspection uses a restricted set of
+read-only commands.
+
+### Privacy and reporting
+
+Raw serials are excluded from exported reports. Device selection and ADB commands
+still use the selected serial, and the local ADB server has its own transport and
+authorization state. The application does not promise that serials remain only
+inside its window. Review device-provided values before sharing an export; see
+the [privacy statement](PRIVACY.md) for the full scope.
+
+Reports identify the application as `Legatto Device Studio` and use
+`schemaVersion: 1`. The export includes the five inspected properties, an ADB
+fingerprint/version, a generation timestamp, and a device pseudonym that is
+stable within the current application session.
 
 ### Quick build
 
@@ -73,12 +88,11 @@ ctest --preset windows-msvc
 ```
 
 Replace the example Qt path with your installation. The [full guide](docs/DEVELOPMENT.md)
-explains dependencies, output locations, runtime requirements, tests, and the
-optional legacy build.
+explains dependencies, output locations, runtime requirements, and tests.
 
 ## Professional development foundation
 
-The repository now separates UI, diagnostic execution, and legacy servicing.
+The repository separates UI presentation from diagnostic execution.
 CMake presets and CTest provide repeatable local builds. GitHub Actions defines
 Linux Qt 5, Linux Qt 6, and native Windows Qt 5 checks. Deterministic fake-tool
 fixtures exercise behavior without phones or external accounts.
@@ -89,17 +103,11 @@ remaining gates belong in the [audit](docs/AUDIT.md),
 [contributor guide](CONTRIBUTING.md), and
 [device acceptance matrix](docs/DEVICE_TEST_MATRIX.md).
 
-## About the legacy client
-
-The original `MotoTool_MTK` Qt 5 application, identifying itself as `0.0.3`, is
-preserved for engineering review. It is excluded from the default CMake build;
-use `-DMOTOTOOL_BUILD_LEGACY=ON` with Qt 5 to compile it explicitly. The original
-qmake project is also retained.
-
-Earlier credential, log-upload, charge-response, serial-selection, and FRP
-containment work is preserved. The remaining legacy execution, protocol,
-account, and device-safety defects are documented in the [audit](docs/AUDIT.md).
-A compiled legacy executable is not a supported servicing release.
+An additional [opt-in emulator validation workflow](docs/EMULATOR_TESTING.md)
+exercises the actual desktop workflow against two disposable Android emulators.
+It is separate from ordinary fake-tool tests. Emulator results cover the tested
+Android/ADB path; they do not establish Motorola servicing or physical USB-driver
+compatibility.
 
 ## Project documentation
 
@@ -108,20 +116,22 @@ A compiled legacy executable is not a supported servicing release.
 | [Development guide](docs/DEVELOPMENT.md) | Toolchain, build/test commands, and daily workflow |
 | [Architecture](docs/ARCHITECTURE.md) | Runtime boundaries and extension design |
 | [Roadmap](docs/ROADMAP.md) | Ordered product work and acceptance criteria |
-| [Engineering audit](docs/AUDIT.md) | Findings, evidence, inherited fixes, and remaining work |
+| [Engineering audit](docs/AUDIT.md) | Findings, evidence, fixes, and remaining work |
 | [Device test matrix](docs/DEVICE_TEST_MATRIX.md) | Real device and Windows acceptance requirements |
+| [Emulator validation](docs/EMULATOR_TESTING.md) | Opt-in disposable-emulator workflow and evidence limits |
 | [Contributing](CONTRIBUTING.md) | Review and contribution conventions |
 | [Security policy](SECURITY.md) | Project status and vulnerability reporting |
-| [Third-party notices](THIRD_PARTY_NOTICES.md) | Attribution, dependencies, and distribution rights |
+| [Privacy statement](PRIVACY.md) | Data handling, local ADB behavior, and report contents |
+| [Disclaimer](DISCLAIMER.md) | Development status, authorized use, warranty and liability terms |
+| [Copyright notice](COPYRIGHT.md) | Ownership scope and reserved rights |
+| [License terms](LICENSE) | Current source-use terms and permissions |
+| [Third-party notices](THIRD_PARTY_NOTICES.md) | Dependencies and required notices |
+| [Licensing review](docs/LICENSING_REVIEW.md) | Rights evidence and decisions required before a license or release |
+| [Attribution and history](docs/PROJECT_HISTORY.md) | Project origins and contributor credits |
 
-## Credits and licensing status
+## Project information
 
-The inherited project history includes **Mubashir Iqbal**
-([Mubshr07](https://github.com/Mubshr07)) and earlier contributors. This repository
-preserves that history and credits; the modernization does not claim original
-authorship of their work.
-
-A repository-wide license for the inherited source/assets has not been
-established. No new blanket license is applied. See
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the evidence and the rights
-that need to be resolved before distribution.
+**Copyright © 2026 Michael Heald (Legatto2).** See the [copyright notice](COPYRIGHT.md)
+and [license terms](LICENSE) for their scope and permissions. Review the
+[privacy statement](PRIVACY.md) and [disclaimer](DISCLAIMER.md) before using a
+development build.

@@ -43,24 +43,27 @@ private:
 private slots:
     void initTestCase()
     {
-        fakePath = qEnvironmentVariable("MOTOTOOL_TEST_ADB");
-        QVERIFY2(!fakePath.isEmpty(), "CTest must provide MOTOTOOL_TEST_ADB to the synthetic fixture.");
+        fakePath = qEnvironmentVariable("LEGATTO_TEST_ADB");
+        QVERIFY2(!fakePath.isEmpty(), "CTest must provide LEGATTO_TEST_ADB to the synthetic fixture.");
         QVERIFY(QFile::exists(fakePath));
     }
 
     void init()
     {
-        qunsetenv("MOTOTOOL_FAKE_MODE");
+        qunsetenv("LEGATTO_FAKE_MODE");
     }
 
     void cleanup()
     {
-        qunsetenv("MOTOTOOL_FAKE_MODE");
+        qunsetenv("LEGATTO_FAKE_MODE");
     }
 
     void startupIsIdleAndRequiresExplicitTool()
     {
         DiagnosticsWindow window;
+        QCOMPARE(window.windowTitle(), QStringLiteral("Legatto Device Studio | Android diagnostics"));
+        QVERIFY(button(window, "aboutApplication"));
+        QCOMPARE(button(window, "aboutApplication")->accessibleName(), QStringLiteral("About Legatto Device Studio"));
         auto *service = window.findChild<Diagnostics::Service *>();
         QSignalSpy finished(service, &Diagnostics::Service::completed);
         QVERIFY(!service->isBusy());
@@ -140,7 +143,7 @@ private slots:
 
     void unauthorizedDevicesCannotBeInspected()
     {
-        qputenv("MOTOTOOL_FAKE_MODE", "unauthorized");
+        qputenv("LEGATTO_FAKE_MODE", "unauthorized");
         DiagnosticsWindow window;
         QVERIFY(checkTool(window));
         QVERIFY(scan(window));
@@ -156,7 +159,7 @@ private slots:
     {
         DiagnosticsWindow window;
         QVERIFY(checkTool(window));
-        qputenv("MOTOTOOL_FAKE_MODE", "fail");
+        qputenv("LEGATTO_FAKE_MODE", "fail");
         QVERIFY(scan(window));
         QCOMPARE(window.findChild<QTableWidget *>(QStringLiteral("devices"))->rowCount(), 0);
         QVERIFY(!button(window, "primary")->isEnabled());
@@ -167,7 +170,7 @@ private slots:
     {
         DiagnosticsWindow window;
         QVERIFY(checkTool(window));
-        qputenv("MOTOTOOL_FAKE_MODE", "timeout");
+        qputenv("LEGATTO_FAKE_MODE", "timeout");
         auto *service = window.findChild<Diagnostics::Service *>();
         QSignalSpy finished(service, &Diagnostics::Service::completed);
         button(window, "refreshDevices")->click();

@@ -51,7 +51,7 @@ private slots:
         QFETCH(bool, remember);
         QTemporaryDir dir;
         QVERIFY(dir.isValid());
-        const QString path = dir.filePath("motoToolSettings");
+        const QString path = dir.filePath("legacySettings");
         // Out-of-order keys and CRLF must not alter the migration policy.
         const QByteArray legacy = QByteArray("userName=test=alias@example.invalid\r\npass=DUMMY_SECRET_ONLY\r\nrememberMe=")
             + (remember ? "1" : "0") + "\r\n";

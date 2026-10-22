@@ -7,8 +7,8 @@
       "hidden": true,
       "cacheVariables": {
         "BUILD_TESTING": "ON",
-        "MOTOTOOL_BUILD_LEGACY": "OFF",
-        "MOTOTOOL_QT_MAJOR": "5"
+        "LEGATTO_BUILD_LEGACY": "OFF",
+        "LEGATTO_QT_MAJOR": "5"
       }
     },
     {
@@ -25,7 +25,7 @@
       "displayName": "Linux Qt 6 diagnostics and tests",
       "inherits": "linux-debug",
       "binaryDir": "${sourceDir}/build/linux-qt6",
-      "cacheVariables": { "MOTOTOOL_QT_MAJOR": "6" }
+      "cacheVariables": { "LEGATTO_QT_MAJOR": "6" }
     },
     {
       "name": "windows-msvc",

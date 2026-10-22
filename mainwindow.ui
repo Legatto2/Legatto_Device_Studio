@@ -430,7 +430,7 @@ border-radius:10px;
             <string notr="true">font: 800 18pt &quot;Comic Sans MS&quot;;</string>
            </property>
            <property name="text">
-            <string>Welcome to MotoTool</string>
+            <string>Legatto Device Studio — legacy client</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>

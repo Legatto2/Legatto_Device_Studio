@@ -41,27 +41,27 @@ private:
 
 private slots:
     void initTestCase() {
-        m_fixture = qEnvironmentVariable("MOTOTOOL_TEST_ADB");
+        m_fixture = qEnvironmentVariable("LEGATTO_TEST_ADB");
 #ifdef TEST_FAKE_ADB_PATH
         if (m_fixture.isEmpty()) m_fixture = QString::fromUtf8(TEST_FAKE_ADB_PATH);
 #endif
-        QVERIFY2(!m_fixture.isEmpty() && QFileInfo::exists(m_fixture), "Set MOTOTOOL_TEST_ADB to the compiled fake_adb target (named adb or adb.exe).");
-        m_oldMode = qgetenv("MOTOTOOL_FAKE_MODE");
-        m_oldTrace = qgetenv("MOTOTOOL_FAKE_TRACE");
+        QVERIFY2(!m_fixture.isEmpty() && QFileInfo::exists(m_fixture), "Set LEGATTO_TEST_ADB to the compiled fake_adb target (named adb or adb.exe).");
+        m_oldMode = qgetenv("LEGATTO_FAKE_MODE");
+        m_oldTrace = qgetenv("LEGATTO_FAKE_TRACE");
         m_oldSerial = qgetenv("ANDROID_SERIAL");
         m_oldSocket = qgetenv("ADB_SERVER_SOCKET");
         m_oldAdbTrace = qgetenv("ADB_TRACE");
     }
     void init() {
-        qputenv("MOTOTOOL_FAKE_MODE", "normal");
-        qunsetenv("MOTOTOOL_FAKE_TRACE");
+        qputenv("LEGATTO_FAKE_MODE", "normal");
+        qunsetenv("LEGATTO_FAKE_TRACE");
         qunsetenv("ANDROID_SERIAL");
         qunsetenv("ADB_SERVER_SOCKET");
         qunsetenv("ADB_TRACE");
     }
     void cleanupTestCase() {
-        restore("MOTOTOOL_FAKE_MODE", m_oldMode);
-        restore("MOTOTOOL_FAKE_TRACE", m_oldTrace);
+        restore("LEGATTO_FAKE_MODE", m_oldMode);
+        restore("LEGATTO_FAKE_TRACE", m_oldTrace);
         restore("ANDROID_SERIAL", m_oldSerial);
         restore("ADB_SERVER_SOCKET", m_oldSocket);
         restore("ADB_TRACE", m_oldAdbTrace);
@@ -135,7 +135,7 @@ private slots:
         QFETCH(QByteArray, mode);
         QFETCH(Status, status);
         QFETCH(QString, state);
-        qputenv("MOTOTOOL_FAKE_MODE", mode);
+        qputenv("LEGATTO_FAKE_MODE", mode);
         Service service;
         QSignalSpy spy(&service, &Service::completed);
         QVERIFY(service.setAdbPath(m_fixture));
@@ -149,7 +149,7 @@ private slots:
     void explicitSelectionAndAllowlistedCommands() {
         QTemporaryDir directory;
         const QString tracePath = directory.filePath(QStringLiteral("commands.jsonl"));
-        qputenv("MOTOTOOL_FAKE_TRACE", tracePath.toUtf8());
+        qputenv("LEGATTO_FAKE_TRACE", tracePath.toUtf8());
         qputenv("ANDROID_SERIAL", "WRONG-DEVICE");
         qputenv("ADB_SERVER_SOCKET", "tcp:untrusted.invalid:5037");
         qputenv("ADB_TRACE", "all");
@@ -163,6 +163,7 @@ private slots:
         const Result inspected = result(spy, 1);
         QCOMPARE(inspected.status, Status::Success);
         QCOMPARE(inspected.report.value(QStringLiteral("schemaVersion")).toInt(), 1);
+        QCOMPARE(inspected.report.value(QStringLiteral("application")).toString(), QStringLiteral("Legatto Device Studio"));
         QCOMPARE(inspected.report.value(QStringLiteral("device")).toObject().value(QStringLiteral("model")).toString(), QStringLiteral("Moto Test"));
         int propertyReads = 0;
         for (const QByteArray &line : read(tracePath).split('\n')) {
@@ -224,7 +225,7 @@ private slots:
         QVERIFY(service.setAdbPath(m_fixture));
         QVERIFY(service.scanDevices());
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
-        qputenv("MOTOTOOL_FAKE_MODE", mode);
+        qputenv("LEGATTO_FAKE_MODE", mode);
         QVERIFY(service.inspectDevice(QStringLiteral("FAKE-DEVICE-A")));
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 2, 5000);
         QCOMPARE(result(spy, 1).status, Status::InvalidRequest);
@@ -244,7 +245,7 @@ private slots:
     void processFailures() {
         QFETCH(QByteArray, mode);
         QFETCH(Status, status);
-        qputenv("MOTOTOOL_FAKE_MODE", mode);
+        qputenv("LEGATTO_FAKE_MODE", mode);
         Limits limits;
         limits.commandTimeoutMs = 1000;
         limits.maxOutputBytes = 4096;
@@ -259,13 +260,13 @@ private slots:
         QVERIFY(!service.isBusy());
         QTest::qWait(30);
         QCOMPARE(spy.count(), 1);
-        qputenv("MOTOTOOL_FAKE_MODE", "normal");
+        qputenv("LEGATTO_FAKE_MODE", "normal");
         QVERIFY(service.verifyTool());
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 2, 5000);
         QCOMPARE(result(spy, 1).status, Status::Success);
     }
     void busyCancellationAndReuse() {
-        qputenv("MOTOTOOL_FAKE_MODE", "timeout");
+        qputenv("LEGATTO_FAKE_MODE", "timeout");
         Service service;
         QSignalSpy spy(&service, &Service::completed);
         QSignalSpy progress(&service, &Service::progress);
@@ -279,7 +280,7 @@ private slots:
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
         QCOMPARE(result(spy).status, Status::Cancelled);
         QVERIFY(!service.isBusy());
-        qputenv("MOTOTOOL_FAKE_MODE", "normal");
+        qputenv("LEGATTO_FAKE_MODE", "normal");
         QVERIFY(service.scanDevices());
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 2, 5000);
         QCOMPARE(result(spy, 1).status, Status::Success);
@@ -417,7 +418,7 @@ private slots:
         QVERIFY(service.setAdbPath(m_fixture));
         QVERIFY(service.scanDevices());
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
-        qputenv("MOTOTOOL_FAKE_MODE", mode);
+        qputenv("LEGATTO_FAKE_MODE", mode);
         QVERIFY(service.inspectDevice(QStringLiteral("FAKE-DEVICE-A")));
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 2, 15000);
         const Result inspected = result(spy, 1);
@@ -444,7 +445,7 @@ private slots:
         QVERIFY(service.setAdbPath(m_fixture));
         QVERIFY(service.scanDevices());
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 1, 5000);
-        qputenv("MOTOTOOL_FAKE_MODE", "slow");
+        qputenv("LEGATTO_FAKE_MODE", "slow");
         QVERIFY(service.inspectDevice(QStringLiteral("FAKE-DEVICE-A")));
         QTRY_COMPARE_WITH_TIMEOUT(spy.count(), 2, 5000);
         QCOMPARE(result(spy, 1).status, Status::TimedOut);

@@ -52,7 +52,7 @@ jobs:
           python3 --version >> audit-artifacts/toolchain.txt
           dpkg-query -W 'qt*base*-dev' >> audit-artifacts/toolchain.txt
           cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug \
-            -DMOTOTOOL_QT_MAJOR="$QT_MAJOR" -DMOTOTOOL_BUILD_LEGACY="$BUILD_LEGACY" \
+            -DLEGATTO_QT_MAJOR="$QT_MAJOR" -DLEGATTO_BUILD_LEGACY="$BUILD_LEGACY" \
             2>&1 | tee audit-artifacts/configure.log
       - name: Compile without starting device services
         run: |
@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           mkdir -p build/qmake-legacy
           cd build/qmake-legacy
-          qmake ../../MotoTool_MTK.pro CONFIG+=debug 'QMAKE_CXXFLAGS+=-Werror=return-type'
+          qmake ../../LegacyServiceClient.pro CONFIG+=debug 'QMAKE_CXXFLAGS+=-Werror=return-type'
           make -j2 2>&1 | tee ../../audit-artifacts/qmake-legacy-build.log
       - name: Preserve evidence only
         if: always()
@@ -112,7 +112,7 @@ jobs:
           cmake --version | Set-Content audit-artifacts/toolchain.txt
           qmake -v | Add-Content audit-artifacts/toolchain.txt
           python --version | Add-Content audit-artifacts/toolchain.txt
-          cmake --preset windows-msvc -DMOTOTOOL_BUILD_LEGACY=ON 2>&1 | Tee-Object audit-artifacts/configure.log
+          cmake --preset windows-msvc -DLEGATTO_BUILD_LEGACY=ON 2>&1 | Tee-Object audit-artifacts/configure.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Compile with native MSVC
         shell: pwsh

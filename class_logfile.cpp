@@ -7,7 +7,7 @@ Class_LogFile::Class_LogFile(QObject *parent) : QObject(parent)
     logDir.setPath(QString(appPath+"/Log/"));
     if(!logDir.exists()) logDir.mkdir(QString(appPath+"/Log/"));
 
-    filePath = QString(QString(appPath+"/Log/MotoTool_MTK_LogFile_"+QDate::currentDate().toString("dd:MM:yyyy").replace(":","_")+".txt"));
+    filePath = QString(QString(appPath+"/Log/LegacyServiceClient_LogFile_"+QDate::currentDate().toString("dd:MM:yyyy").replace(":","_")+".txt"));
 
     //()<<" Log File Path: "<<filePath;
 }
@@ -22,7 +22,7 @@ void Class_LogFile::rx_initialFileFolders()
         if(logFile->open(QIODevice::WriteOnly))
         {
            // qDebug()<<" New File is generated ";
-            QByteArray baa("Welcom to MOTO TOOL MTK Software \n +++++++++++++++++++++++++++++++++++++++++++ \n");
+            QByteArray baa("Legatto Device Studio — unsupported legacy client \n +++++++++++++++++++++++++++++++++++++++++++ \n");
             logFile->write(baa);
             logFile->close();
         }

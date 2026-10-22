@@ -1,7 +1,10 @@
 /build*/
 /audit-artifacts/
+/emulator-evidence/
 /Log/
+# Historical local preferences must never be committed.
 /motoToolSettings
+/legatto-device-studio-legacy-settings
 *.pro.user*
 .qmake.stash
 __pycache__/

@@ -95,7 +95,7 @@ public:
     GlobalVars();
 
 
-    static QString motoTool_SettingsFilePath;
+    static QString legacySettingsFilePath;
 
     static QString meta_imei_1[8];
     static QString meta_imei_2[8];

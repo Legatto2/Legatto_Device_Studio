@@ -4,9 +4,10 @@
 
 | Target | Purpose | Dependencies |
 | --- | --- | --- |
-| `MotoTool_Diagnostics` | New desktop diagnostics application; default | C++17, Qt Core and Widgets |
-| `MotoTool_MTK` | Preserved legacy client for engineering review; opt-in | Qt 5 Core, Widgets, Network, SerialPort; external runtime dependencies unresolved |
-| Test targets | Deterministic hardware-free checks | Qt Test and Python; fake subprocess fixtures |
+| `LegattoDeviceStudio` | Legatto Device Studio desktop diagnostics; default | C++17, Qt Core and Widgets |
+| `LegacyServiceClient` | Preserved legacy client for engineering review; opt-in | Qt 5 Core, Widgets, Network, SerialPort; external runtime dependencies unresolved |
+| Ordinary test targets | Deterministic hardware-free checks | Qt Test and Python; fake subprocess fixtures |
+| `emulator_integration_tests` | Separately enabled genuine ADB/UI integration | Qt Test, Python, Android SDK, two disposable AVDs; `LEGATTO_BUILD_EMULATOR_TESTS=ON` |
 
 The new application does not load the legacy client. Building that client does
 not enable its workflows in diagnostics.
@@ -61,9 +62,9 @@ The preset selects the Release configuration for build/test. A successful source
 build does not create a self-contained installer: the executable still needs the
 matching Qt libraries/plugins. Do not label a compiler output folder a release.
 
-The Linux executable is `build/linux-debug/MotoTool_Diagnostics` (or under
+The Linux executable is `build/linux-debug/LegattoDeviceStudio` (or under
 `build/linux-qt6` for that preset). The Windows executable is
-`build/windows-msvc/Release/MotoTool_Diagnostics.exe`. Launch it from the configured
+`build/windows-msvc/Release/LegattoDeviceStudio.exe`. Launch it from the configured
 Qt environment until packaging/runtime deployment is completed.
 
 ### Optional legacy compilation
@@ -71,20 +72,20 @@ Qt environment until packaging/runtime deployment is completed.
 Use a Qt 5 configuration and enable the explicit option:
 
 ```sh
-cmake --preset linux-debug -DMOTOTOOL_BUILD_LEGACY=ON
+cmake --preset linux-debug -DLEGATTO_BUILD_LEGACY=ON
 cmake --build --preset linux-debug
 ctest --preset linux-debug
 ```
 
 The same option can be added to the Windows Qt 5 configuration. It persists in
-that CMake cache; set `-DMOTOTOOL_BUILD_LEGACY=OFF` when returning to a diagnostics-only
-build. The original `MotoTool_MTK.pro` remains available to existing qmake users.
+that CMake cache; set `-DLEGATTO_BUILD_LEGACY=OFF` when returning to a diagnostics-only
+build. The original `LegacyServiceClient.pro` remains available to existing qmake users.
 Do not launch the legacy application as an automatic build/test step.
 
 ## Working with ADB
 
-The build/tests do not require a phone or a real ADB installation. For a deliberate
-manual diagnostics run, obtain Platform-Tools from the
+Ordinary builds/tests do not require a phone or a real ADB installation. For a
+deliberate manual diagnostics run, obtain Platform-Tools from the
 [official Android source](https://developer.android.com/tools/releases/platform-tools),
 select its native `adb`/`adb.exe`, inspect the tool details, refresh the device
 list, select the intended authorized device, and request inspection.
@@ -96,6 +97,27 @@ hash identifies the selected file; authenticity still depends on acquisition.
 ADB may start or reuse a local server. Diagnostics should not kill a shared server,
 change driver packages, elevate, or send recovery commands automatically. Document
 hardware outcomes separately in [DEVICE_TEST_MATRIX.md](DEVICE_TEST_MATRIX.md).
+
+## Optional emulator integration
+
+The dedicated [emulator guide](EMULATOR_TESTING.md) covers real Platform-Tools,
+two disposable Android Virtual Devices, and the actual diagnostics window/service.
+It exercises explicit selection and reports, cancellation/recovery, disconnect
+handling, and a fresh scan after an emulator restart. The CMake option
+`LEGATTO_BUILD_EMULATOR_TESTS` is **OFF by default**; ordinary CTest continues to
+use fake ADB fixtures.
+
+Use the documented Python runner in a dedicated session with no other ADB devices
+or emulator workloads. It owns its AVD directories and emulator processes; it
+does not reset the shared ADB server or clean unrelated sessions. Linux Qt 6 is
+the dedicated CI lane; the automated runner currently supports Linux only.
+The guide distinguishes manual Windows emulator evaluation from ordinary native
+Windows build/tests and physical-device acceptance.
+
+Record the exact source, SDK package revisions, and test outcomes. A successful
+emulator run proves the tested synthetic Android environment; it does not fill
+physical Motorola/MediaTek, USB driver, firmware-servicing, or packaged Windows
+acceptance rows.
 
 ## Professional change workflow
 
@@ -126,10 +148,12 @@ actually enabled in GitHub.
 | UI tests/smoke checks | Controls, state transitions, layout constraints | Windows accessibility or physical-device safety unless specifically executed |
 | Source guards | Inherited containment regression signals | Functional behavior by themselves |
 | Linux/Windows CI | Native compilation and hardware-free test results | Packaged installation, external services, or phones |
+| Dedicated emulator integration | Genuine ADB, two disposable Android instances, selected-device UI/report and lifecycle behavior | Physical USB/driver behavior, Motorola firmware support, or packaged Windows installation |
 | Device/package acceptance | Specific real environments recorded in the matrix | All models, firmware, drivers, or future tool versions |
 
 Do not collect legacy service credentials, access customer phones, or debit an
-account to make CI pass. Tests use synthetic values and local fixtures.
+account to make CI pass. Ordinary tests use synthetic values and local fixtures;
+the opt-in emulator lane uses only its verified disposable AVDs.
 
 ## Pipeline tools
 

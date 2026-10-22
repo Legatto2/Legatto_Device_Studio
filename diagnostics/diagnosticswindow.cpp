@@ -12,6 +12,7 @@
 #include <QJsonValue>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
@@ -72,7 +73,7 @@ DiagnosticsWindow::DiagnosticsWindow(QWidget *parent)
     : QMainWindow(parent), service(new Diagnostics::Service(this))
 {
     service->setObjectName(QStringLiteral("diagnosticService"));
-    setWindowTitle(QStringLiteral("MotoTool | Device diagnostics"));
+    setWindowTitle(QStringLiteral("Legatto Device Studio | Android diagnostics"));
     resize(1120, 820);
     setMinimumSize(760, 600);
 
@@ -117,11 +118,37 @@ DiagnosticsWindow::DiagnosticsWindow(QWidget *parent)
     layout->setSpacing(16);
 
     auto *brandRow = new QHBoxLayout;
-    brandRow->addWidget(label(QStringLiteral("MOTOTOOL"), "brand"));
+    auto *brand = label(QStringLiteral("LEGATTO / DEVICE STUDIO"), "brand");
+    brand->setWordWrap(false);
+    brandRow->addWidget(brand);
     brandRow->addStretch();
-    auto *previewBadge = label(QStringLiteral("DIAGNOSTICS  /  DEVELOPMENT PREVIEW"), "muted");
+    auto *previewBadge = label(QStringLiteral("DEVELOPMENT PREVIEW"), "muted");
     previewBadge->setWordWrap(false);
     brandRow->addWidget(previewBadge);
+    auto *aboutButton = new QPushButton(QStringLiteral("&About"));
+    aboutButton->setObjectName(QStringLiteral("aboutApplication"));
+    aboutButton->setAccessibleName(QStringLiteral("About Legatto Device Studio"));
+    aboutButton->setToolTip(QStringLiteral("Version, project scope, and attribution"));
+    brandRow->addWidget(aboutButton);
+    connect(aboutButton, &QPushButton::clicked, this, [this] {
+        auto *dialog = new QMessageBox(QMessageBox::Information,
+            QStringLiteral("About Legatto Device Studio"),
+            QStringLiteral("<b>Legatto Device Studio %1</b>").arg(QStringLiteral(LEGATTO_VERSION)),
+            QMessageBox::Close, this);
+        dialog->setObjectName(QStringLiteral("aboutDialog"));
+        dialog->setAccessibleName(QStringLiteral("About Legatto Device Studio"));
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setStyleSheet(QStringLiteral("QMessageBox { background: #17232f; color: #e7eef5; }"));
+        dialog->setTextFormat(Qt::RichText);
+        dialog->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        dialog->setInformativeText(QStringLiteral(
+            "<p>Development preview for read-only Android diagnostics. Choose an authorized device, "
+            "inspect five device properties, and review a report before exporting.</p>"
+            "<p>Copyright © 2026 Michael Heald (Legatto2).</p>"
+            "<p><a style=\"color: #70e4cc;\" href=\"https://github.com/Legatto2/Legatto_Device_Studio\">Project repository and documentation</a></p>"
+            "<p><a style=\"color: #70e4cc;\" href=\"https://github.com/Legatto2/Legatto_Device_Studio/blob/main/docs/PROJECT_HISTORY.md\">Attribution and history</a></p>"));
+        dialog->open();
+    });
     layout->addLayout(brandRow);
     layout->addWidget(label(QStringLiteral("Know the device. See the result."), "title"));
     layout->addWidget(label(QStringLiteral("Inspect an authorized Android device and export a concise report. Every device query is read-only."), "muted"));
@@ -262,7 +289,7 @@ DiagnosticsWindow::DiagnosticsWindow(QWidget *parent)
             else if (state == QStringLiteral("offline"))
                 deviceHint->setText(QStringLiteral("The device is offline. Reconnect its USB cable, then refresh."));
             else if (selectedDeviceAuthorized())
-                deviceHint->setText(QStringLiteral("Selection confirmed. Inspect queries only this device; serials stay in this window."));
+                deviceHint->setText(QStringLiteral("Selection confirmed. Inspect queries only this device. Raw serials are excluded from exported reports."));
             else
                 deviceHint->setText(QStringLiteral("This device state cannot be inspected. Check USB permissions and the device connection, then refresh."));
         }
@@ -453,7 +480,7 @@ void DiagnosticsWindow::exportReport()
 {
     if (service->isBusy() || report.isEmpty()) return;
     const QString path = QFileDialog::getSaveFileName(this, QStringLiteral("Save the reviewed diagnostics report"),
-        QStringLiteral("mototool-diagnostics.json"), QStringLiteral("JSON report (*.json)"));
+        QStringLiteral("legatto-device-studio-report.json"), QStringLiteral("JSON report (*.json)"));
     if (path.isEmpty()) return;
     QString error;
     if (saveReport(path, &error)) showStatus(QStringLiteral("Report saved. Only the fields shown in Export preview were included."));

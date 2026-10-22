@@ -1,7 +1,7 @@
-# Contributing to MotoTool
+# Contributing to Legatto Device Studio
 
 Start with a reproducible problem and a small, reviewable change. The development
-target is `MotoTool_Diagnostics`; the older `MotoTool_MTK` client is preserved for
+target is `LegattoDeviceStudio`; the older `LegacyServiceClient` client is preserved for
 review and must be explicitly enabled at build time. Its presence in the source
 tree is not evidence that its servicing operations are safe to use.
 
@@ -16,8 +16,10 @@ tree is not evidence that its servicing operations are safe to use.
 4. Implement the smallest maintainable change. Reuse the diagnostics service;
    keep command execution out of UI event handlers. Use argument arrays, explicit
    device selection, bounded output, finite deadlines, and typed outcomes.
-5. Build and run the applicable tests. Tests for command execution use the
-   compiled fake-ADB fixture, never a real phone or the installed ADB server.
+5. Build and run the applicable tests. Ordinary command-execution tests use the
+   compiled fake-ADB fixture. Genuine SDK tools are permitted only in the
+   separately enabled [disposable-emulator lane](docs/EMULATOR_TESTING.md), with
+   its explicit opt-in and ownership guards; customer phones are never CI fixtures.
 6. Inspect the diff for secrets, generated output, licensing, and unintended
    behavior. Update the relevant documentation when user behavior changes.
 7. Open a pull request with exact validation results and remaining limitations.
@@ -38,7 +40,7 @@ For Qt 6 diagnostics, replace `linux-debug` with `linux-qt6`. The legacy client
 requires a separate Qt 5 build. To compile it for inspection:
 
 ```sh
-cmake --preset linux-debug -DMOTOTOOL_BUILD_LEGACY=ON
+cmake --preset linux-debug -DLEGATTO_BUILD_LEGACY=ON
 cmake --build --preset linux-debug
 ctest --preset linux-debug
 ```
@@ -100,6 +102,11 @@ report exports before sharing. Follow [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTIC
 for source and dependency provenance. No contributor may invent a license grant
 for inherited code or redistribute external utilities based only on their
 presence in a development workflow.
+
+The owner has chosen rights reserved for new original contributions under
+[LICENSE](LICENSE) and [COPYRIGHT.md](COPYRIGHT.md). A contribution does not
+silently change that choice or transfer an unrelated author's rights. Confirm
+the applicable permission for material before proposing its inclusion.
 
 Publishing a release requires resolved distribution rights, verified dependencies,
 the required Windows and device coverage, an accurate support matrix, and an

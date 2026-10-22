@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
 #endif
     QStringList arguments = app.arguments().mid(1);
-    const QString tracePath = qEnvironmentVariable("MOTOTOOL_FAKE_TRACE");
+    const QString tracePath = qEnvironmentVariable("LEGATTO_FAKE_TRACE");
     if (!tracePath.isEmpty()) {
         QFile trace(tracePath);
         if (!trace.open(QIODevice::Append)) return 90;
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     const QStringList host{QStringLiteral("-H"), QStringLiteral("127.0.0.1"), QStringLiteral("-P"), QStringLiteral("5037")};
     if (arguments.mid(0, 4) != host) return 91;
     arguments = arguments.mid(4);
-    const QString mode = qEnvironmentVariable("MOTOTOOL_FAKE_MODE", QStringLiteral("normal"));
+    const QString mode = qEnvironmentVariable("LEGATTO_FAKE_MODE", QStringLiteral("normal"));
     if (mode == QStringLiteral("timeout")) { QThread::msleep(30000); return 0; }
     if (mode == QStringLiteral("slow")) QThread::msleep(200);
     if (mode == QStringLiteral("fail")) { err("DUMMY_TOKEN_DO_NOT_EXPORT C:\\private\\secret\n"); return 23; }

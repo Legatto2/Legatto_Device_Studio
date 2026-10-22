@@ -1,6 +1,6 @@
 #include "globalvars.h"
 
-QString GlobalVars::motoTool_SettingsFilePath="";
+QString GlobalVars::legacySettingsFilePath="";
 
 QString GlobalVars::meta_imei_1[8] = {"", "", "", "", "", "", "", ""};
 QString GlobalVars::meta_imei_2[8] = {"", "", "", "", "", "", "", ""};
@@ -77,5 +77,5 @@ void GlobalVars::initalizeToZero()
 
     GlobalVars::txtOutPutColor = QColor::fromRgb(255, 153, 0);
 
-    GlobalVars::motoTool_SettingsFilePath=QString(QDir::homePath()+"/motoToolSettings");
+    GlobalVars::legacySettingsFilePath=QString(QDir::homePath()+"/legatto-device-studio-legacy-settings");
 }

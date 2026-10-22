@@ -27,7 +27,7 @@ BackEndClass::BackEndClass(QObject *parent) : QObject(parent)
 
     QDir chckRequiredFolder(m3FolderPath);
     if(!chckRequiredFolder.exists()){
-        QMessageBox::critical(nullptr, "M3 Error", "Please Install the Mototool Software.", QMessageBox::Ok);
+        QMessageBox::critical(nullptr, "M3 Error", "The required legacy servicing helper is missing.", QMessageBox::Ok);
         qDebug()<<" Folder not exist: "<<m3FolderPath;
         qDebug()<<" Folder not exist: "<<adbFolderPath;
         qDebug()<<" Folder not exist: "<<ChinoeIMEICMToolFolderPath_Data1;
