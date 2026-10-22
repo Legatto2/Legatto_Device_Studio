@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QApplication>
+#include <QSignalBlocker>
+#include "securityhelpers.h"
+#include "portselection.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -8,6 +11,13 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->chck_LoginRememberMe->setText("Remember username only");
+    ui->txt_Password->clear();
+    ui->pb_FRP_SPD->setEnabled(false);
+    ui->pb_FRP_SPD->setToolTip("Disabled pending a secure, validated replacement.");
+    connect(ui->chck_LoginRememberMe, &QCheckBox::toggled, this, [this](bool) {
+        if (settingsReady) saveNewSettings();
+    });
 
     this->setWindowFlags(Qt::FramelessWindowHint);
     //this->setFixedSize(550, 450);
@@ -31,8 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
     initializeObjectsAndStartThread();
     ui->cmb_DeviceModel_D1->setCurrentIndex(2);
 
-    //ui->processFrame->hide();
-    ui->loginFrame->hide();
+    ui->processFrame->hide();
+    ui->loginFrame->show();
 
     heading = ui->lbl_ProgramHeading;
     heading->setMouseTracking(true);
@@ -88,6 +98,10 @@ void MainWindow::on_timer_singleShot_Elapsed()
 // ------------ Button Slots ----------------
 void MainWindow::on_pb_Login_clicked()
 {
+    if (!settingsReady) {
+        ui->lbl_LoginResults->setText("Settings are not ready. Resolve the settings error before login.");
+        return;
+    }
     if(needUpdatedSoftware ){
         QDesktopServices::openUrl(QUrl("https://m-key.org/"));
         return;
@@ -99,10 +113,8 @@ void MainWindow::on_pb_Login_clicked()
     this->setFixedSize(860, 600);
     return;
     */
-    QByteArray postdata;// = data.toJson();
-    postdata.append(QString("sysID="+ ui->lbl_SystemID->text()+"&").toUtf8());
-    postdata.append(QString("UserName="+ ui->txt_UsernameEmail->text() +"&").toUtf8());
-    postdata.append(QString("Password="+ ui->txt_Password->text()+"&").toUtf8());
+    const QByteArray postdata = Security::encodeLoginForm(
+        ui->lbl_SystemID->text(), ui->txt_UsernameEmail->text(), ui->txt_Password->text());
 
     ui->lbl_LoginResults->setText("Wait for Server Response");
 
@@ -300,77 +312,32 @@ void MainWindow::on_pb_CopyUniqueID_clicked()
 
 void MainWindow::seeSettingsFile()
 {
-    rememberMyCredentials = false;
-    if(QFile::exists(GlobalVars::motoTool_SettingsFilePath)){
-        QFile settingFile(GlobalVars::motoTool_SettingsFilePath);
-        if(settingFile.open(QIODevice::ReadOnly))
-        {
-            QTextStream out(&settingFile);
-            while (!out.atEnd()) {
-                processSettingsFileLine(out.readLine());
-            }
-        }
-        else
-        {
-            ui->lbl_LoginResults->setText("Settings File not opened");
-        }
+    settingsReady = false;
+    ui->txt_Password->clear();
+    Security::LoginPreferences preferences;
+    QString error;
+    if (!Security::loadLoginPreferences(GlobalVars::motoTool_SettingsFilePath, &preferences, &error)) {
+        ui->lbl_LoginResults->setText(error + " Login disabled; resolve the settings file and restart.");
+        ui->pb_Login->setEnabled(false);
+        return;
     }
-    else
-    {
-        //qDebug()<<" Settings File did not exist. ";
-        ui->lbl_LoginResults->setText("Settings File not exist.");
-    }
+    const QSignalBlocker blocker(ui->chck_LoginRememberMe);
+    ui->chck_LoginRememberMe->setChecked(preferences.rememberUsername);
+    ui->txt_UsernameEmail->setText(preferences.username);
+    settingsReady = true;
+    ui->pb_Login->setEnabled(true);
 }
-void MainWindow::processSettingsFileLine(QString linee)
-{
-    //qDebug()<<" line:"<<linee;
-    int idex = linee.indexOf("=");
-    QString comd = linee.left(idex);
-    if(comd == "rememberMe") {
-        linee.remove(0, (idex+1));
-        idex = linee.indexOf("\n");
-        comd = linee.left(idex);
-        if(comd == "1") {
-            rememberMyCredentials = true;
-            ui->chck_LoginRememberMe->setChecked(true)   ;
-        }
-    }
-    else if(comd == "userName") {
-        linee.remove(0, (idex+1));
-        idex = linee.indexOf("\n");
-        comd = linee.left(idex);
-        if(rememberMyCredentials) {
-            ui->txt_UsernameEmail->setText(comd);
-        }
-    }
-    else if(comd == "pass") {
-        linee.remove(0, (idex+1));
-        idex = linee.indexOf("\n");
-        comd = linee.left(idex);
-        if(rememberMyCredentials) {
-            ui->txt_Password->setText(comd);
-        }
-    }
-    else{
-        //qDebug()<<" Passing line : "<<linee;
-    }
-}
+
 void MainWindow::saveNewSettings()
 {
-    QString fileData = QString("rememberMe="+QString(ui->chck_LoginRememberMe->isChecked()?"1":"0")+"\n");
-    fileData += QString("userName="+ui->txt_UsernameEmail->text()+"\n");
-    fileData += QString("pass="+ui->txt_Password->text()+"\n");
-
-    //qDebug()<<" Saving Data: "<<fileData;
-
-    QFile settingFile(GlobalVars::motoTool_SettingsFilePath);
-    if(settingFile.open(QIODevice::WriteOnly))
-    {
-        settingFile.write(fileData.toUtf8());
-    }
-    else
-    {
-        ui->lbl_LoginResults->setText("Settings File not opened to Write");
+    Security::LoginPreferences preferences;
+    preferences.rememberUsername = ui->chck_LoginRememberMe->isChecked();
+    if (preferences.rememberUsername) preferences.username = ui->txt_UsernameEmail->text();
+    QString error;
+    if (!Security::saveLoginPreferences(GlobalVars::motoTool_SettingsFilePath, preferences, &error)) {
+        settingsReady = false;
+        ui->pb_Login->setEnabled(false);
+        ui->lbl_LoginResults->setText(error + " Preferences were not saved.");
     }
 }
 
@@ -440,7 +407,7 @@ void MainWindow::on_pb_Stop_SPD_clicked()
     ui->pb_CopytoClipBoard_SPD->setEnabled(true);
     ui->pb_CheckADB_Devices->setEnabled(true);
     ui->pb_unLock_SPD->setEnabled(true);
-    ui->pb_FRP_SPD->setEnabled(true);
+    ui->pb_FRP_SPD->setEnabled(false);
 
     emit tx_StartRepairing(15179, false, Tool_SPD);
 
@@ -518,18 +485,9 @@ void MainWindow::on_chk_Manual_IMEI_SPD_stateChanged(int arg1)
 }
 void MainWindow::on_pb_FRP_SPD_clicked()
 {
-    ui->txt_outPut_SPD->clear();
-
-    if(checkAllOk4spdTool())
-    {
-        emit tx_StartRepairing(15179, true, Tool_SPD_FRP_FastBoot);
-        ui->pb_Stop_SPD->setEnabled(true);
-        ui->pb_StartRepair_SPD->setEnabled(false);
-        ui->pb_CopytoClipBoard_SPD->setEnabled(false);
-        ui->pb_CheckADB_Devices->setEnabled(false);
-        ui->pb_unLock_SPD->setEnabled(false);
-        ui->pb_FRP_SPD->setEnabled(false);
-    }
+    ui->pb_FRP_SPD->setEnabled(false);
+    rx_TextBoxOutput(Tool_SPD, 1,
+        "FRP is disabled pending a secure, validated replacement.", true, false, Qt::red);
 }
 
 // ---------------------- Public Slots -----------------------
@@ -540,32 +498,18 @@ void MainWindow::rx_ProcessCompleted(int idx, bool complt)
 void MainWindow::rx_newSerialPortDetected(QList<QSerialPortInfo> sInfo)
 {
     localSerialList = sInfo;
-    //qDebug()<<" All ok no issue in clear method. please check the loop";
-    int numberOfCount = ui->cmb_PortNumber_D1->count();
-    for(int i=0; i<sInfo.length(); i++)
-    {
-        //qDebug()<<" index: "<<i<<" portName: "<<sInfo.at(i).portName() ;
-        if(i<numberOfCount){
-            ui->cmb_PortNumber_D1->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D2->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D3->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D4->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D5->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D6->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D7->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D8->setItemText(i, QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-        }
-        else{
-            ui->cmb_PortNumber_D1->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D2->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D3->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D4->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D5->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D6->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D7->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-            ui->cmb_PortNumber_D8->addItem(QString(sInfo.at(i).portName() + " " + sInfo.at(i).manufacturer()));
-        }
+    QStringList names, labels;
+    for (const QSerialPortInfo &info : sInfo) {
+        names.append(info.portName());
+        labels.append(info.portName() + " " + info.manufacturer());
     }
+    const QList<QComboBox *> combos = {
+        ui->cmb_PortNumber_D1, ui->cmb_PortNumber_D2,
+        ui->cmb_PortNumber_D3, ui->cmb_PortNumber_D4,
+        ui->cmb_PortNumber_D5, ui->cmb_PortNumber_D6,
+        ui->cmb_PortNumber_D7, ui->cmb_PortNumber_D8
+    };
+    for (QComboBox *combo : combos) refreshPortSelection(combo, names, labels);
 }
 
 void MainWindow::rx_ADB_ProcessData(signalStructure sig)
@@ -589,7 +533,7 @@ void MainWindow::rx_ADB_ProcessData(signalStructure sig)
         ui->pb_CopytoClipBoard_SPD->setEnabled(true);
         ui->pb_CheckADB_Devices->setEnabled(true);
         ui->pb_unLock_SPD->setEnabled(true);
-        ui->pb_FRP_SPD->setEnabled(true);
+        ui->pb_FRP_SPD->setEnabled(false);
         ui->lbl_Credit->setText("Credit: "+QString::number(GlobalVars::userInfo_creditDetails,'f', 1 ));
         if(sig.upload_LogHistory)
             logger.writeToLog(ui->txt_outPut_SPD->toPlainText().toUtf8());
@@ -1137,6 +1081,19 @@ bool MainWindow::checkAllOk4spdTool()
 }
 bool MainWindow::checkAllOk4MetaMode(int device)
 {
+    const QList<QComboBox *> combos = {
+        ui->cmb_PortNumber_D1, ui->cmb_PortNumber_D2,
+        ui->cmb_PortNumber_D3, ui->cmb_PortNumber_D4,
+        ui->cmb_PortNumber_D5, ui->cmb_PortNumber_D6,
+        ui->cmb_PortNumber_D7, ui->cmb_PortNumber_D8
+    };
+    if (device < 0 || device >= combos.size()) return false;
+    const int selected = combos.at(device)->currentIndex();
+    if (selected < 0 || selected >= localSerialList.size()
+        || combos.at(device)->currentData().toString() != localSerialList.at(selected).portName()) {
+        rx_TextBoxOutput(Tool_MTK, device, "Select a currently connected serial port.", true, false, Qt::yellow);
+        return false;
+    }
     switch (device) {
     case 0: {
         if(ui->txt_IMEI_D1_1->text().length() != 15) { QMessageBox::critical(this, "IMEI Error", "Please enter a valid 15 digit IMEI-1 code.", QMessageBox::Ok); return false; }

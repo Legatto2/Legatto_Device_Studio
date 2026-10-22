@@ -1,0 +1,50 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "MOTOTOOL_BUILD_LEGACY": "OFF",
+        "MOTOTOOL_QT_MAJOR": "5"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Qt 5 diagnostics and tests",
+      "inherits": "base",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    },
+    {
+      "name": "linux-qt6",
+      "displayName": "Linux Qt 6 diagnostics and tests",
+      "inherits": "linux-debug",
+      "binaryDir": "${sourceDir}/build/linux-qt6",
+      "cacheVariables": { "MOTOTOOL_QT_MAJOR": "6" }
+    },
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows x64 MSVC Qt 5 diagnostics and tests",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/windows-msvc",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "linux-debug", "configurePreset": "linux-debug", "jobs": 2 },
+    { "name": "linux-qt6", "configurePreset": "linux-qt6", "jobs": 2 },
+    { "name": "windows-msvc", "configurePreset": "windows-msvc", "configuration": "Release", "jobs": 2 }
+  ],
+  "testPresets": [
+    { "name": "linux-debug", "configurePreset": "linux-debug", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },
+    { "name": "linux-qt6", "configurePreset": "linux-qt6", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },
+    { "name": "windows-msvc", "configurePreset": "windows-msvc", "configuration": "Release", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } }
+  ]
+}

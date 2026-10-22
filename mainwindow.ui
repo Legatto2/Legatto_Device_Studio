@@ -120,7 +120,7 @@
                    </sizepolicy>
                   </property>
                   <property name="text">
-                   <string>abc@abc.com</string>
+                   <string/>
                   </property>
                  </widget>
                 </item>
@@ -265,7 +265,7 @@
                    </sizepolicy>
                   </property>
                   <property name="text">
-                   <string>12345678</string>
+                   <string/>
                   </property>
                   <property name="echoMode">
                    <enum>QLineEdit::Password</enum>

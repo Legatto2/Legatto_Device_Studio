@@ -1,0 +1,2 @@
+// Generated from a repository-relative asset. Never embed developer machine paths.
+IDI_ICON1 ICON DISCARDABLE "@CMAKE_CURRENT_SOURCE_DIR@/pics/appIcon.ico"

@@ -1,0 +1,23 @@
+name: Feature proposal
+description: Propose a measurable improvement with a testable outcome.
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What task is difficult today, and who needs the improvement?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Proposed outcome and acceptance criteria
+      description: Describe observable behavior and how it can be verified.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Compatibility, dependencies, and risk
+      description: Include affected platforms, device models, external tools, licenses, and whether it writes device state.

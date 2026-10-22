@@ -1,21 +1,54 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Project status
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+MotoTool_MTK is under redevelopment. `MotoTool_Diagnostics` is a development
+application; the inherited `MotoTool_MTK` client is retained for engineering
+review. There is no supported production release or verified customer-device
+compatibility promise. The previous template version table did not describe
+this project and has been removed.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+Diagnostics is limited to explicit, read-only ADB inspection. The optional legacy
+client still has execution, device-safety, account, privacy, and dependency risks
+described in [the audit](docs/AUDIT.md). Compiling it does not make those workflows
+supported.
 
-## Reporting a Vulnerability
+## Reporting
 
-Use this section to tell people how to report a vulnerability.
+If **Security → Report a vulnerability** is available on the repository, use it
+to submit a private report. Availability must be checked on GitHub; this file
+does not claim private reporting has been enabled.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+If no private channel is available, open a minimal issue asking the maintainer
+to establish one. Do not include credentials, customer/device identifiers,
+sensitive logs, executable exploit details, or private data in a public issue.
+No private email address or guaranteed response time is asserted until published
+by the maintainer.
+
+A useful private report gives the affected revision, application target,
+platform/tool versions, expected and observed behavior, impact, and a minimal
+reproduction with synthetic data where possible. Distinguish source findings
+from physical-device or service reproductions.
+
+## Development boundaries
+
+- Put new commands in the restricted service with explicit target selection,
+  separate arguments, bounded execution, and checked results.
+- Treat device/tool output as untrusted. Validate structure/size before use in
+  UI, reports, filenames, or subsequent commands.
+- Do not commit account secrets, provider credentials, or customer transcripts
+  to code, tests, issues, or workflow artifacts.
+- A computed executable hash is not proof of publisher authenticity.
+- Preserve separation between diagnostics and the unvalidated legacy client.
+- Future device-changing operations need specific preflight, authorization,
+  verification, and recovery behavior.
+
+## Historical data and credentials
+
+Earlier hardening removed active plaintext-password storage from preferences and
+disabled automatic remote log uploads. It did not erase old files, backups, logs,
+history, or provider records. Handle real exposed credentials with their issuing
+provider; changing source or suppressing debug output is not credential rotation.
+
+See [third-party notices](THIRD_PARTY_NOTICES.md) for provenance gaps and the
+[device test matrix](docs/DEVICE_TEST_MATRIX.md) for validation boundaries.
