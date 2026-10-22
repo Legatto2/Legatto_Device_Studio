@@ -1619,7 +1619,7 @@ ADB_Commands BackEndClass::sendOperationDetailsToServerToReduceCredit()
     object["DeviceName"] = GlobalVars::spd_modelStr;
 
     QNetworkAccessManager manager;
-    QNetworkRequest request(QUrl(GlobalVars::api_MTKcharges));
+    QNetworkRequest request{QUrl(GlobalVars::api_MTKcharges)};
     if (request.url().scheme() != "https") return failed();
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
     request.setRawHeader("Authorization", GlobalVars::authorizedToken.toUtf8());
