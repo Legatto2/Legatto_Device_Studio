@@ -1,4 +1,4 @@
-# MotoTool
+# Legatto Device Studio
 
 ### Know the device. See the result.
 
