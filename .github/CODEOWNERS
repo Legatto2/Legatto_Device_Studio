@@ -1,0 +1,8 @@
+# Review ownership. Enforcement requires an owner-configured GitHub ruleset.
+* @Legatto2
+/.github/ @Legatto2
+/CMakeLists.txt @Legatto2
+/CMakePresets.json @Legatto2
+/cmake/ @Legatto2
+/SECURITY.md @Legatto2
+/THIRD_PARTY_NOTICES.md @Legatto2

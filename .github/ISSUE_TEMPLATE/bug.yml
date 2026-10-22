@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible application or development-tool problem.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not include passwords, tokens, IMEI values, phone serials, customer data,
+        proprietary binaries, or vulnerability details here. Read SECURITY.md for
+        sensitive reporting. Use synthetic fixture logs where possible.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and source revision
+      description: OS, Qt, compiler, commit SHA, target (Diagnostics or legacy), and ADB version if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the exact command or UI steps and whether this reproduces with the fake-ADB tests.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Relevant error text, CI URL, or screenshot with private values removed.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I checked this report and attachments for credentials and identifying device or customer data.
+          required: true

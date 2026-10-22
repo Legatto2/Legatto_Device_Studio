@@ -6,3 +6,8 @@
 .qmake.stash
 __pycache__/
 *.pyc
+/CMakeUserPresets.json
+/.cache/
+/compile_commands.json
+/.vs/
+*.user

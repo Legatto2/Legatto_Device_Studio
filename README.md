@@ -1,82 +1,127 @@
-# MotoTool_MTK
+# MotoTool
 
-Legacy Windows-oriented Qt/C++ desktop client for Motorola servicing workflows.
-The application source identifies itself as 0.0.3. **This is not a production-ready
-or hardware-validated release. Do not use it on customer equipment.**
+### Know the device. See the result.
 
-## First hardening increment
+A Qt/C++ desktop workbench for clearer Motorola and Android diagnostics, with a
+professional development foundation for future, validated service operations.
 
-This branch preserves the existing UI and most legacy workflows while addressing
-specific containment defects. It does not establish that the remaining operations
-are safe or compatible with current devices.
+**Development preview · `0.1.0-dev` · Windows-first · Qt 5 / Qt 6**
 
-- FRP is disabled in the UI and backend. The unauthenticated HTTP retrieval and
-  response-to-shell execution path have been removed, not replaced or re-enabled.
-- Login preferences store only an optional username. Legacy plaintext passwords
-  are discarded from the active settings file during startup migration. Passwords
-  and tokens are never passed to the new preferences writer. Unchecking the
-  checkbox forgets the saved username immediately.
-- Login form values are percent-encoded individually, including literal `+` and
-  `&` characters. The login screen is explicitly shown at startup.
-  Embedded username/password defaults have been removed from the UI resource.
-- Legacy `qDebug()` output is disabled in both debug and release application builds.
-  This is temporary containment, not a replacement for structured redacted logging.
-- Automatic remote log uploads are disabled. Existing local logs are not deleted
-  or scrubbed and may still contain sensitive identifiers.
-- The ADB charge-response boundary now has a 15-second deadline, transport/HTTP
-  checks, strict success-field validation, and a return value on every path.
-- Serial-port choices are rebuilt from the current snapshot, preserve selection
-  by name on reorder, and clear disconnected selections instead of silently
-  selecting another device. Selection bounds are checked before legacy indexing.
+[Getting started](#getting-started) · [Build guide](docs/DEVELOPMENT.md) ·
+[Roadmap](docs/ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) ·
+[Engineering audit](docs/AUDIT.md)
 
-Migration does not securely erase historical disk blocks, backups, or old logs.
-If migration cannot safely replace the file, login is disabled and an error is
-shown. Resolve the settings-file issue and restart; do not treat an error as a
-successful cleanup.
+![MotoTool Diagnostics development workspace; no device connected](docs/images/diagnostics-workspace.png)
 
-## Build and test
+## What this version does
 
-The CI baseline uses Qt 5.15.13 and GCC 13 on Ubuntu 24.04 to compile the Qt code
-without launching the application. The runtime remains Windows-oriented. Linux
-compilation is not a Windows packaging, driver, external-tool, or hardware test.
-The project has not been ported or validated against Qt 6.
+`MotoTool_Diagnostics` is the new default application. It provides a focused
+workflow: choose your Android tools, select a connected device, inspect it, and
+review a report before exporting.
 
-From a configured Qt 5 build environment:
+| Capability | Behavior |
+| --- | --- |
+| Guided tool setup | Select an explicit local ADB executable; see its version and SHA-256 fingerprint |
+| Device discovery | See connected devices and their authorization/connection state |
+| Explicit targeting | Select the intended device; inspection checks its identity and binds commands to it |
+| Read-only inspection | Read manufacturer, model, Android version, build ID, and security-patch date |
+| Clear execution state | Bounded requests, cancellation, and distinct success/error outcomes |
+| Controlled reporting | Preview/export JSON with a session device pseudonym; omit raw serial/path/transcript fields |
+| Usable workspace | Resizable desktop layout, keyboard-accessible controls, and connection guidance |
+
+Tool checks run the executable you select. Obtain it from the official Android
+Platform-Tools distribution; a displayed fingerprint identifies a file but does
+not authenticate its publisher. ADB may start or reuse its local server.
+
+This is a development build. Physical-device compatibility and an installable
+Windows release are still being validated. There is no published production
+installer or universal Motorola/MediaTek support claim.
+
+## Getting started
+
+1. **Build the diagnostics application** using the [development guide](docs/DEVELOPMENT.md).
+2. **Get Android Platform-Tools** from [Google's official download](https://developer.android.com/tools/releases/platform-tools)
+   or Android Studio's SDK Manager.
+3. **Open MotoTool Diagnostics**, browse to the native `adb.exe` on Windows or
+   `adb` on Linux, and choose **Check tool**.
+4. Connect a device with USB debugging enabled and approve its debugging prompt.
+   Choose **Refresh**, then select the intended device.
+5. Choose **Inspect selected device**. Review **Device details** and **Export preview**;
+   use **Export report** when you want a JSON file.
+
+No account-service login is needed by the diagnostics application. Inspection
+uses a restricted set of read-only commands. The original service workflows are
+kept in a separate legacy application.
+
+### Quick build
+
+With Qt development libraries, CMake, Ninja, a C++17 compiler, and Python installed:
 
 ```sh
-mkdir build
-cd build
-qmake ../MotoTool_MTK.pro CONFIG+=debug "QMAKE_CXXFLAGS+=-Werror=return-type"
-make -j2
+cmake --preset linux-debug
+cmake --build --preset linux-debug
+ctest --preset linux-debug
 ```
 
-On Windows, use the matching build command for your Qt kit, such as `mingw32-make`
-or `nmake`, rather than mixing compilers with a different Qt binary distribution.
+Use `linux-qt6` for the Qt 6 configuration. On Windows with a compatible Qt MSVC
+kit and Visual Studio 2022:
 
-Run the hardware-free tests:
-
-```sh
-python3 -m unittest discover -s tests -p 'test_*.py' -v
-mkdir build-tests
-cd build-tests
-qmake ../tests/security_tests.pro CONFIG+=debug "QMAKE_CXXFLAGS+=-Werror=return-type"
-make -j2
-QT_QPA_PLATFORM=offscreen ./security_tests -txt
+```powershell
+cmake --preset windows-msvc -DCMAKE_PREFIX_PATH=C:/Qt/5.15.2/msvc2019_64
+cmake --build --preset windows-msvc
+ctest --preset windows-msvc
 ```
 
-The Qt tests compile the same preferences, form-encoding, charge-parser, and
-port-selection implementations used by the application. They use temporary
-files and synthetic data, not phones, real credentials, or remote services.
-The Python tests are source-level regression guards, not functional hardware tests.
+Replace the example Qt path with your installation. The [full guide](docs/DEVELOPMENT.md)
+explains dependencies, output locations, runtime requirements, tests, and the
+optional legacy build.
 
-## Dependencies and distribution
+## Professional development foundation
 
-The original application expects separately installed utilities/data under `M3`,
-`ADB`, and `DATA`, and access to external services. Those dependencies and service
-implementations are not supplied here. Do not download unknown replacement
-binaries or assume this source grants rights to distribute external components.
-Source and third-party licensing must be established before redistribution.
+The repository now separates UI, diagnostic execution, and legacy servicing.
+CMake presets and CTest provide repeatable local builds. GitHub Actions defines
+Linux Qt 5, Linux Qt 6, and native Windows Qt 5 checks. Deterministic fake-tool
+fixtures exercise behavior without phones or external accounts.
 
-See [docs/HARDENING.md](docs/HARDENING.md) for remaining release blockers and
-validation boundaries. The existing security-policy file is retained unchanged;
-its template version table is not a validated support promise for this application.
+Contributions follow a small-branch, reviewable-PR workflow with explicit
+acceptance criteria and recorded validation. CI logs, detailed findings, and
+remaining gates belong in the [audit](docs/AUDIT.md),
+[contributor guide](CONTRIBUTING.md), and
+[device acceptance matrix](docs/DEVICE_TEST_MATRIX.md).
+
+## About the legacy client
+
+The original `MotoTool_MTK` Qt 5 application, identifying itself as `0.0.3`, is
+preserved for engineering review. It is excluded from the default CMake build;
+use `-DMOTOTOOL_BUILD_LEGACY=ON` with Qt 5 to compile it explicitly. The original
+qmake project is also retained.
+
+Earlier credential, log-upload, charge-response, serial-selection, and FRP
+containment work is preserved. The remaining legacy execution, protocol,
+account, and device-safety defects are documented in the [audit](docs/AUDIT.md).
+A compiled legacy executable is not a supported servicing release.
+
+## Project documentation
+
+| Document | Purpose |
+| --- | --- |
+| [Development guide](docs/DEVELOPMENT.md) | Toolchain, build/test commands, and daily workflow |
+| [Architecture](docs/ARCHITECTURE.md) | Runtime boundaries and extension design |
+| [Roadmap](docs/ROADMAP.md) | Ordered product work and acceptance criteria |
+| [Engineering audit](docs/AUDIT.md) | Findings, evidence, inherited fixes, and remaining work |
+| [Device test matrix](docs/DEVICE_TEST_MATRIX.md) | Real device and Windows acceptance requirements |
+| [Contributing](CONTRIBUTING.md) | Review and contribution conventions |
+| [Security policy](SECURITY.md) | Project status and vulnerability reporting |
+| [Third-party notices](THIRD_PARTY_NOTICES.md) | Attribution, dependencies, and distribution rights |
+
+## Credits and licensing status
+
+The inherited project history includes **Mubashir Iqbal**
+([Mubshr07](https://github.com/Mubshr07)) and earlier contributors. This repository
+preserves that history and credits; the modernization does not claim original
+authorship of their work.
+
+A repository-wide license for the inherited source/assets has not been
+established. No new blanket license is applied. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the evidence and the rights
+that need to be resolved before distribution.

@@ -1,0 +1,136 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main, 'hardening/**', 'improvement/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux Qt ${{ matrix.qt }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - qt: '5'
+            packages: qtbase5-dev libqt5serialport5-dev
+            legacy: 'ON'
+          - qt: '6'
+            packages: qt6-base-dev
+            legacy: 'OFF'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install Qt and build tools
+        env:
+          QT_PACKAGES: ${{ matrix.packages }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y cmake ninja-build $QT_PACKAGES
+      - name: Record toolchain and configure
+        env:
+          QT_MAJOR: ${{ matrix.qt }}
+          BUILD_LEGACY: ${{ matrix.legacy }}
+        run: |
+          set -euo pipefail
+          mkdir -p audit-artifacts
+          git rev-parse HEAD > audit-artifacts/revision.txt
+          cmake --version > audit-artifacts/toolchain.txt
+          g++ --version >> audit-artifacts/toolchain.txt
+          python3 --version >> audit-artifacts/toolchain.txt
+          dpkg-query -W 'qt*base*-dev' >> audit-artifacts/toolchain.txt
+          cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+            -DMOTOTOOL_QT_MAJOR="$QT_MAJOR" -DMOTOTOOL_BUILD_LEGACY="$BUILD_LEGACY" \
+            2>&1 | tee audit-artifacts/configure.log
+      - name: Compile without starting device services
+        run: |
+          set -euo pipefail
+          cmake --build build/ci --parallel 2 2>&1 | tee audit-artifacts/build.log
+      - name: Run hardware-free tests
+        run: |
+          set -euo pipefail
+          ctest --test-dir build/ci --output-on-failure --no-tests=error \
+            --output-junit "$PWD/audit-artifacts/test-results.xml" \
+            2>&1 | tee audit-artifacts/tests.log
+      - name: Compile the preserved legacy qmake entry point
+        if: matrix.qt == '5'
+        run: |
+          set -euo pipefail
+          mkdir -p build/qmake-legacy
+          cd build/qmake-legacy
+          qmake ../../MotoTool_MTK.pro CONFIG+=debug 'QMAKE_CXXFLAGS+=-Werror=return-type'
+          make -j2 2>&1 | tee ../../audit-artifacts/qmake-legacy-build.log
+      - name: Preserve evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: evidence-linux-qt${{ matrix.qt }}-${{ github.sha }}
+          path: |
+            audit-artifacts/
+            build/ci/Testing/Temporary/LastTest.log
+          retention-days: 14
+          if-no-files-found: warn
+
+  windows:
+    name: Windows Qt 5
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      # Pin the node action directly. Its composite wrapper references floating actions.
+      - name: Install Qt 5 MSVC development kit
+        uses: jurplel/install-qt-action/action@d325aaf2a8baeeda41ad0b5d39f84a6af9bcf005 # v4.3.0
+        with:
+          version: '5.15.2'
+          host: windows
+          arch: win64_msvc2019_64
+          cache: 'false'
+          aqtversion: '==3.3.0'
+          py7zrversion: '==1.0.0'
+      - name: Record toolchain and configure
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force audit-artifacts | Out-Null
+          git rev-parse HEAD | Set-Content audit-artifacts/revision.txt
+          cmake --version | Set-Content audit-artifacts/toolchain.txt
+          qmake -v | Add-Content audit-artifacts/toolchain.txt
+          python --version | Add-Content audit-artifacts/toolchain.txt
+          cmake --preset windows-msvc -DMOTOTOOL_BUILD_LEGACY=ON 2>&1 | Tee-Object audit-artifacts/configure.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile with native MSVC
+        shell: pwsh
+        run: |
+          cmake --build --preset windows-msvc 2>&1 | Tee-Object audit-artifacts/build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run hardware-free tests on Windows
+        shell: pwsh
+        run: |
+          ctest --preset windows-msvc --output-junit "$PWD/audit-artifacts/test-results.xml" 2>&1 | Tee-Object audit-artifacts/tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Preserve evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: evidence-windows-qt5-${{ github.sha }}
+          path: |
+            audit-artifacts/
+            build/windows-msvc/Testing/Temporary/LastTest.log
+          retention-days: 14
+          if-no-files-found: warn
